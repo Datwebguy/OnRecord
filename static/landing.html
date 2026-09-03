@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OnRecord — Scout files. Clerk only acts on what is on record.</title>
+  <link rel="stylesheet" href="/static/landing.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <header class="landing-nav">
+    <a href="/" class="nav-brand">
+      <h1 class="serif-brand">OnRecord</h1>
+      <span class="nav-tagline">Scout files. Clerk only acts on what is on record.</span>
+    </a>
+    <div class="nav-actions">
+      <a href="#how-it-works" class="nav-link">How it works</a>
+      <a href="#faq" class="nav-link">FAQ</a>
+      <a href="/desk" class="btn-primary">Open desk</a>
+    </div>
+  </header>
+
+  <!-- 1. Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="mono-tag">TWO ROLES · ISOLATED MEMORY · ONE CONFIRMATION</span>
+      </div>
+      <h2 class="hero-title serif-brand">OnRecord</h2>
+      <p class="hero-line">Scout files. Clerk only acts on what is on record.</p>
+      <p class="hero-sub">
+        Two roles. Isolated memory partitions. Work moves only as a file across append-only journals. No file, no act.
+      </p>
+      <div class="hero-ctas">
+        <a href="/desk" class="btn-primary">Open desk</a>
+        <a href="#how-it-works" class="btn-secondary">How it works</a>
+      </div>
+    </div>
+    
+    <div class="hero-interactive">
+      <canvas id="hero-canvas"></canvas>
+      <div class="canvas-overlay-stamp">
+        SYSTEM STATE: <span class="active-stamp">COLD HANDOFF</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Problem Section -->
+  <section class="landing-section" id="problem">
+    <div class="section-head">
+      <span class="mono-tag">01 / FAILURE MODE</span>
+      <h2>Why Unfiled Work Collapses</h2>
+    </div>
+    <div class="problem-card">
+      <h3>Incoming work dies when the acting agent “remembers” a chat that was never filed.</h3>
+      <p>
+        Most multi-agent systems rely on loose conversational memory: one model promises to do something in a prompt window, context drifts, and an action model hallucinates context that never existed in storage. Irreversible steps get executed on unverified assumptions.
+      </p>
+      
+      <div class="problem-breakdown">
+        <div class="breakdown-box flawed">
+          <h4>CHAT-BOUND AGENTS (FLAWED)</h4>
+          <p>
+            Shared context window. The executing agent acts on conversational suggestions, untracked chat tokens, and unverified assumptions. No durable paper trail.
+          </p>
+        </div>
+        <div class="breakdown-box onrecord">
+          <h4>ONRECORD DESK (ISOLATED)</h4>
+          <p>
+            Scout writes WARM records and COLD events. Clerk reads only what was filed into the journal. If an entity was never filed, Clerk returns NOT ON RECORD and refuses to act.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Desk Section -->
+  <section class="landing-section" id="desk-columns">
+    <div class="section-head">
+      <span class="mono-tag">02 / INTERFACE</span>
+      <h2>Three Columns. Not Two Chat Toys.</h2>
+    </div>
+    <div class="desk-columns-grid">
+      <!-- Column 1 -->
+      <div class="column-card">
+        <div class="column-card-header">
+          <h3>Scout</h3>
+          <span class="mono-tag">Filing Role</span>
+        </div>
+        <div class="column-card-body">
+          <p>
+            Reads only the allowlisted sources saved in Scene by the operator. Discovers and files incoming asks and people directly into memory.
+          </p>
+          <p>Scout has no wallet, cannot ping, cannot spend, and never writes action decisions.</p>
+        </div>
+      </div>
+
+      <!-- Column 2 -->
+      <div class="column-card">
+        <div class="column-card-header">
+          <h3>Queue</h3>
+          <span class="mono-tag">Filed Backlog</span>
+        </div>
+        <div class="column-card-body">
+          <p>
+            The Queue is not a separate database table. It is dynamically projected from memory: filed tasks that have no corresponding action recorded yet.
+          </p>
+          <p>Zero cached state. If memory is deleted, the queue reflects it instantly.</p>
+        </div>
+      </div>
+
+      <!-- Column 3 -->
+      <div class="column-card">
+        <div class="column-card-header">
+          <h3>Clerk</h3>
+          <span class="mono-tag">Action Role</span>
+        </div>
+        <div class="column-card-body">
+          <p>
+            Opens only filed tasks. Queries memory for the person and ask records. Evaluates and applies explicit stamps:
+          </p>
+          <div>
+            <span class="stamp-badge stamp-act">ON RECORD</span>
+            <span class="stamp-badge stamp-skip">SKIP</span>
+            <span class="stamp-badge stamp-nor">NOT ON RECORD</span>
+          </div>
+          <p>Proposes onchain pings only if a verified wallet exists, requiring explicit operator confirmation.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. How It Works Section -->
+  <section class="landing-section" id="how-it-works">
+    <div class="section-head">
+      <span class="mono-tag">03 / EXECUTION PIPELINE</span>
+      <h2>How It Works</h2>
+    </div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num">01 / SCENE</div>
+        <h4>Operator Allowlist</h4>
+        <p>Scene starts empty. You paste the exact repositories or Base wallets to watch. If Scene is empty, Scout files nothing.</p>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">02 / FILE</div>
+        <h4>Scout Writes Files</h4>
+        <p>Scout processes sources, sets WARM entities (Person, Ask), and logs an append-only COLD <code>filed</code> event.</p>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">03 / RECALL</div>
+        <h4>Clerk Reads Only</h4>
+        <p>New process starts. Clerk reads the COLD stream. If a name was never filed, Clerk stamps <strong>NOT ON RECORD</strong> and halts.</p>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">04 / SETTLE</div>
+        <h4>Confirmed Base Ping</h4>
+        <p>Clerk proposes an onchain ping to <code>Person.bound</code> on Base. Transaction broadcasts only after you check confirm.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Rules Strip Section -->
+  <section class="rules-strip-section">
+    <div class="rules-strip-container">
+      <div class="rule-item">
+        <h3>No file, no act.</h3>
+        <p>MISSING RECORD = NOT ON RECORD</p>
+      </div>
+      <div class="rule-item">
+        <h3>Empty Scene, empty queue.</h3>
+        <p>ZERO PRELOADED WORK</p>
+      </div>
+      <div class="rule-item">
+        <h3>Delete Scout, the queue dies.</h3>
+        <p>MEMORY IS LOAD-BEARING</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. About Section -->
+  <section class="landing-section" id="about">
+    <div class="section-head">
+      <span class="mono-tag">04 / ARCHITECTURE</span>
+      <h2>A Desk Anyone Can Run</h2>
+    </div>
+    <div class="about-grid">
+      <div class="about-text">
+        <p>
+          OnRecord is a self-contained incoming work desk. One operator runs two isolated roles across a single database file with partitioned tenant memory.
+        </p>
+        <p>
+          You bring the real GitHub repository or Base wallet address. The system ships without seed fixtures, preloaded personas, or fake demo rows.
+        </p>
+      </div>
+      <div class="about-box">
+        <h4>DESK INVARIANTS</h4>
+        <ul>
+          <li>Scout writes only <code>tenant_scout</code></li>
+          <li>Clerk writes only <code>tenant_clerk</code></li>
+          <li>Clerk reads <code>tenant_scout</code> for filings; miss = stop</li>
+          <li>Irreversible Base action requires human confirmation</li>
+          <li>Dynamic queue projection with zero secondary tables</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. FAQ Section -->
+  <section class="landing-section" id="faq">
+    <div class="section-head">
+      <span class="mono-tag">05 / VERIFICATION</span>
+      <h2>Frequently Asked Questions</h2>
+    </div>
+    <div class="faq-grid">
+      <div class="faq-item">
+        <h4>What is Scene?</h4>
+        <p>The allowlist you paste at runtime. Empty sources means Scout files nothing and the queue remains empty.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Can Clerk invent a person?</h4>
+        <p>No. If an entity is not found in Scout's memory partition, Clerk immediately returns NOT ON RECORD.</p>
+      </div>
+      <div class="faq-item">
+        <h4>Does Scout spend?</h4>
+        <p>No. Scout has no wallet, has no private key, and never signs transactions.</p>
+      </div>
+      <div class="faq-item">
+        <h4>What is a ping?</h4>
+        <p>One operator-confirmed Base mainnet transaction to a bound address that Scout filed from the Scene.</p>
+      </div>
+      <div class="faq-item" style="grid-column: span 2;">
+        <h4>Is there demo data?</h4>
+        <p>No. No preloaded profiles, mock asks, hardcoded wallets, or fake hashes exist in the codebase.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mid-Page Call to Action -->
+  <section class="mid-cta-section">
+    <h2 class="serif-brand">Ready to run the desk?</h2>
+    <p>Open OnRecord and paste your own repository or wallet source.</p>
+    <a href="/desk" class="btn-primary">Open desk</a>
+  </section>
+
+  <!-- 8. Footer -->
+  <footer class="landing-footer">
+    <div class="footer-left">
+      <span class="serif-brand">OnRecord</span>
+      <p>Scout files. Clerk only acts on what is on record.</p>
+    </div>
+    <div class="footer-right">
+      <a href="/desk" class="footer-link">Open desk</a>
+      <a href="#how-it-works" class="footer-link">How it works</a>
+      <a href="#faq" class="footer-link">FAQ</a>
+      <span class="mono-tag" style="color: var(--text-dim);">MIT LICENSE</span>
+    </div>
+  </footer>
+
+  <script src="/static/landing.js"></script>
+</body>
+</html>

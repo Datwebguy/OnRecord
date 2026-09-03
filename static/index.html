@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OnRecord — Desk</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/style.css?v=5.0">
+</head>
+<body>
+
+  <!-- Top Header & Scene Console -->
+  <header class="desk-nav">
+    <div class="nav-row">
+      <div class="brand-block">
+        <a href="/" class="brand-link" title="OnRecord Home">
+          <h1 class="serif-brand">OnRecord</h1>
+        </a>
+      </div>
+      
+      <!-- One-row Status line -->
+      <div class="status-strip">
+        <span id="status-line" class="status-line-text">Scene empty · Queue 0 · Clerk idle</span>
+      </div>
+
+      <div class="nav-right">
+        <a href="/" class="nav-home-btn">← Home</a>
+      </div>
+    </div>
+
+    <!-- Human Scene Operator Strip -->
+    <div class="scene-strip">
+      <div class="scene-grid">
+        <div class="field-group repo-field">
+          <label for="scene-repo">REPO</label>
+          <input type="text" id="scene-repo" placeholder="github.com/org/repo" autocomplete="off" />
+        </div>
+        <div class="field-group wallet-field">
+          <label for="scene-wallet">WALLET</label>
+          <input type="text" id="scene-wallet" placeholder="0x…" autocomplete="off" />
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn-primary" id="btn-save-scene">Save Scene</button>
+          <button type="button" class="btn-secondary" id="btn-run-scout">Run Scout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 3-Column Desk Stage -->
+  <main class="desk-stage">
+
+    <!-- COLUMN: SCOUT -->
+    <section class="stage-col" id="col-scout">
+      <div class="col-head">
+        <h2 class="col-title">SCOUT</h2>
+        <span class="col-count" id="scout-count">0</span>
+      </div>
+      <div class="col-stream" id="scout-body">
+        <div class="col-empty">No filings on record.</div>
+      </div>
+    </section>
+
+    <!-- COLUMN: QUEUE -->
+    <section class="stage-col" id="col-queue">
+      <div class="col-head">
+        <h2 class="col-title">QUEUE</h2>
+        <span class="col-count" id="queue-count">0</span>
+      </div>
+      <div class="col-stream" id="queue-body">
+        <div class="col-empty">Queue is empty.</div>
+      </div>
+    </section>
+
+    <!-- COLUMN: CLERK -->
+    <section class="stage-col col-clerk-stage" id="col-clerk">
+      <div class="col-head">
+        <h2 class="col-title">CLERK</h2>
+        <div class="verifier-bar">
+          <input type="text" id="verify-person-input" placeholder="Verify handle" autocomplete="off" />
+          <button type="button" id="btn-verify-person" class="btn-verify">Check</button>
+        </div>
+      </div>
+      
+      <div id="verifier-result"></div>
+
+      <div class="col-stream" id="clerk-body">
+        <div id="active-task-container">
+          <div class="col-empty">Select a task from the queue.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="desk-toast" class="desk-toast"></div>
+
+  <script src="/static/app.js?v=5.0"></script>
+</body>
+</html>

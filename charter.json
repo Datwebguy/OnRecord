@@ -1,0 +1,5 @@
+{
+  "scout": "file only",
+  "clerk": "act only on filed tasks",
+  "ping": "only to a Person with a bound address"
+}
