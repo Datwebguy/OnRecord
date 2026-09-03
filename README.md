@@ -26,6 +26,7 @@ Judges can inspect the exact memory calls in under 2 minutes:
 
 ### 1. Scout Write Path
 File: [`scout/engine.py`](file:///c:/Users/DELL/Downloads/OnRecord/scout/engine.py)
+- **Filing Logic**: Scout files asks it finds (e.g. inbound activity on a watched wallet or actual retrieved issue authors on a repo), not the repository owner by default. Wallet sources file directly with `bound` address.
 - **`set_entity` (WARM Person)**: `scout_client.set_entity("person", person_name, person_body)`
 - **`set_entity` (WARM Ask)**: `scout_client.set_entity("ask", ask_id, ask_body)`
 - **`write_event` (COLD Event Handoff)**: `scout_client.write_event(acted=[f"filed {ask_id} person={person_name} -> {task_id}"], extra={"ask_id": ask_id, "person": person_name, "task_id": task_id, "source": src})`
