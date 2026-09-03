@@ -25,12 +25,12 @@
   <section class="hero-section">
     <div class="hero-content">
       <div class="hero-badge">
-        <span class="mono-tag">TWO ROLES · ISOLATED MEMORY · ONE CONFIRMATION</span>
+        <span class="mono-tag">PARTITIONED MEMORY · SEPARATED ROLES · OPERATOR CONFIRMATION</span>
       </div>
       <h2 class="hero-title serif-brand">OnRecord</h2>
       <p class="hero-line">Scout files. Clerk only acts on what is on record.</p>
       <p class="hero-sub">
-        Two roles. Isolated memory partitions. Work moves only as a file across append-only journals. No file, no act.
+        An operational desk for incoming work. Scout monitors configured sources and records inbound asks into durable memory. Clerk verifies filed records and executes operator-confirmed actions.
       </p>
       <div class="hero-ctas">
         <a href="/desk" class="btn-primary">Open desk</a>
@@ -41,7 +41,7 @@
     <div class="hero-interactive">
       <canvas id="hero-canvas"></canvas>
       <div class="canvas-overlay-stamp">
-        SYSTEM STATE: <span class="active-stamp">COLD HANDOFF</span>
+        SYSTEM STATE: <span class="active-stamp">ON RECORD</span>
       </div>
     </div>
   </section>
@@ -49,26 +49,26 @@
   <!-- 2. Problem Section -->
   <section class="landing-section" id="problem">
     <div class="section-head">
-      <span class="mono-tag">01 / FAILURE MODE</span>
-      <h2>Why Unfiled Work Collapses</h2>
+      <span class="mono-tag">01 / ARCHITECTURAL PRINCIPLE</span>
+      <h2>The Problem with Ephemeral Context</h2>
     </div>
     <div class="problem-card">
-      <h3>Incoming work dies when the acting agent “remembers” a chat that was never filed.</h3>
+      <h3>Multi-agent workflows fail when execution relies on unverified conversation memory.</h3>
       <p>
-        Most multi-agent systems rely on loose conversational memory: one model promises to do something in a prompt window, context drifts, and an action model hallucinates context that never existed in storage. Irreversible steps get executed on unverified assumptions.
+        When autonomous systems pass instructions through prompt buffers or conversational logs, context drifts and models hallucinate details that never existed in storage. Irreversible actions are taken on assumed premises rather than verified facts.
       </p>
       
       <div class="problem-breakdown">
         <div class="breakdown-box flawed">
-          <h4>CHAT-BOUND AGENTS (FLAWED)</h4>
+          <h4>UNSTRUCTURED PROMPT MEMORY</h4>
           <p>
-            Shared context window. The executing agent acts on conversational suggestions, untracked chat tokens, and unverified assumptions. No durable paper trail.
+            Tasks exist only in conversational context. The executing agent acts on transient text tokens with no durable audit trail and no verified entity records.
           </p>
         </div>
         <div class="breakdown-box onrecord">
-          <h4>ONRECORD DESK (ISOLATED)</h4>
+          <h4>PARTITIONED MEMORY DESK</h4>
           <p>
-            Scout writes WARM records and COLD events. Clerk reads only what was filed into the journal. If an entity was never filed, Clerk returns NOT ON RECORD and refuses to act.
+            Inbound work is filed into persistent storage before execution is evaluated. If an entity was never filed into memory, Clerk flags it as not on record and halts execution.
           </p>
         </div>
       </div>
@@ -79,7 +79,7 @@
   <section class="landing-section" id="desk-columns">
     <div class="section-head">
       <span class="mono-tag">02 / INTERFACE</span>
-      <h2>Three Columns. Not Two Chat Toys.</h2>
+      <h2>Three-Column Operational Desk</h2>
     </div>
     <div class="desk-columns-grid">
       <!-- Column 1 -->
@@ -90,9 +90,9 @@
         </div>
         <div class="column-card-body">
           <p>
-            Reads only the allowlisted sources saved in Scene by the operator. Discovers and files incoming asks and people directly into memory.
+            Monitors operator-specified repositories and wallet addresses. When inbound asks are discovered, Scout writes person and request records into storage.
           </p>
-          <p>Scout has no wallet, cannot ping, cannot spend, and never writes action decisions.</p>
+          <p>Scout has no signing authority, cannot execute transactions, and cannot mutate action decisions.</p>
         </div>
       </div>
 
@@ -100,13 +100,13 @@
       <div class="column-card">
         <div class="column-card-header">
           <h3>Queue</h3>
-          <span class="mono-tag">Filed Backlog</span>
+          <span class="mono-tag">Dynamic Backlog</span>
         </div>
         <div class="column-card-body">
           <p>
-            The Queue is not a separate database table. It is dynamically projected from memory: filed tasks that have no corresponding action recorded yet.
+            A live backlog projected directly from storage. Tasks appear as Scout files them and clear automatically once Clerk completes an action.
           </p>
-          <p>Zero cached state. If memory is deleted, the queue reflects it instantly.</p>
+          <p>The queue maintains no secondary mutable tables. If memory partitions are reset, the queue reflects the change immediately.</p>
         </div>
       </div>
 
@@ -114,18 +114,18 @@
       <div class="column-card">
         <div class="column-card-header">
           <h3>Clerk</h3>
-          <span class="mono-tag">Action Role</span>
+          <span class="mono-tag">Verification & Action</span>
         </div>
         <div class="column-card-body">
           <p>
-            Opens only filed tasks. Queries memory for the person and ask records. Evaluates and applies explicit stamps:
+            Inspects filed records, verifies entity identities against memory, and applies explicit status stamps:
           </p>
           <div>
             <span class="stamp-badge stamp-act">ON RECORD</span>
-            <span class="stamp-badge stamp-skip">SKIP</span>
+            <span class="stamp-badge stamp-skip">SKIPPED</span>
             <span class="stamp-badge stamp-nor">NOT ON RECORD</span>
           </div>
-          <p>Proposes onchain pings only if a verified wallet exists, requiring explicit operator confirmation.</p>
+          <p>Proposes onchain transactions only when a verified wallet address exists, requiring explicit operator confirmation before broadcast.</p>
         </div>
       </div>
     </div>
@@ -134,29 +134,29 @@
   <!-- 4. How It Works Section -->
   <section class="landing-section" id="how-it-works">
     <div class="section-head">
-      <span class="mono-tag">03 / EXECUTION PIPELINE</span>
-      <h2>How It Works</h2>
+      <span class="mono-tag">03 / WORKFLOW</span>
+      <h2>Execution Pipeline</h2>
     </div>
     <div class="flow-steps">
       <div class="flow-step">
-        <div class="step-num">01 / SCENE</div>
+        <div class="step-num">01 / CONFIGURE</div>
         <h4>Operator Allowlist</h4>
-        <p>Scene starts empty. You paste the exact repositories or Base wallets to watch. If Scene is empty, Scout files nothing.</p>
+        <p>The operator configures the GitHub repositories or Base wallet addresses to monitor. If no sources are specified, Scout remains idle.</p>
       </div>
       <div class="flow-step">
         <div class="step-num">02 / FILE</div>
-        <h4>Scout Writes Files</h4>
-        <p>Scout processes sources, sets WARM entities (Person, Ask), and logs an append-only COLD <code>filed</code> event.</p>
+        <h4>Scout Records Data</h4>
+        <p>Scout processes sources, identifies incoming asks, and records structured person and ask files into durable memory.</p>
       </div>
       <div class="flow-step">
-        <div class="step-num">03 / RECALL</div>
-        <h4>Clerk Reads Only</h4>
-        <p>New process starts. Clerk reads the COLD stream. If a name was never filed, Clerk stamps <strong>NOT ON RECORD</strong> and halts.</p>
+        <div class="step-num">03 / VERIFY</div>
+        <h4>Clerk Inspects Records</h4>
+        <p>Clerk reads pending tasks directly from storage. If an entity is queried that was never filed, Clerk returns a verified not on record status.</p>
       </div>
       <div class="flow-step">
         <div class="step-num">04 / SETTLE</div>
-        <h4>Confirmed Base Ping</h4>
-        <p>Clerk proposes an onchain ping to <code>Person.bound</code> on Base. Transaction broadcasts only after you check confirm.</p>
+        <h4>Confirmed Onchain Action</h4>
+        <p>For tasks with a bound wallet address, Clerk prepares the transaction. The transaction broadcasts to Base only upon operator confirmation.</p>
       </div>
     </div>
   </section>
@@ -165,16 +165,16 @@
   <section class="rules-strip-section">
     <div class="rules-strip-container">
       <div class="rule-item">
-        <h3>No file, no act.</h3>
-        <p>MISSING RECORD = NOT ON RECORD</p>
+        <h3>Durable Verification</h3>
+        <p>Unfiled entities are never presumed on record</p>
       </div>
       <div class="rule-item">
-        <h3>Empty Scene, empty queue.</h3>
-        <p>ZERO PRELOADED WORK</p>
+        <h3>Operator Controlled</h3>
+        <p>Sources are defined at runtime with no hardcoded seed data</p>
       </div>
       <div class="rule-item">
-        <h3>Delete Scout, the queue dies.</h3>
-        <p>MEMORY IS LOAD-BEARING</p>
+        <h3>Load-Bearing Storage</h3>
+        <p>Queue state and recall depend entirely on persistent memory</p>
       </div>
     </div>
   </section>
@@ -182,26 +182,26 @@
   <!-- 6. About Section -->
   <section class="landing-section" id="about">
     <div class="section-head">
-      <span class="mono-tag">04 / ARCHITECTURE</span>
-      <h2>A Desk Anyone Can Run</h2>
+      <span class="mono-tag">04 / SYSTEM ARCHITECTURE</span>
+      <h2>Clean Separation of Responsibilities</h2>
     </div>
     <div class="about-grid">
       <div class="about-text">
         <p>
-          OnRecord is a self-contained incoming work desk. One operator runs two isolated roles across a single database file with partitioned tenant memory.
+          OnRecord provides structured role separation for incoming work. Rather than allowing a single agent to observe, decide, and execute autonomously in one prompt, the desk splits discovery from action across isolated memory partitions.
         </p>
         <p>
-          You bring the real GitHub repository or Base wallet address. The system ships without seed fixtures, preloaded personas, or fake demo rows.
+          The system operates without preloaded fixtures, sample profiles, or mock transactions. All records originate from live operator sources.
         </p>
       </div>
       <div class="about-box">
-        <h4>DESK INVARIANTS</h4>
+        <h4>CORE SYSTEM INVARIANTS</h4>
         <ul>
-          <li>Scout writes only <code>tenant_scout</code></li>
-          <li>Clerk writes only <code>tenant_clerk</code></li>
-          <li>Clerk reads <code>tenant_scout</code> for filings; miss = stop</li>
-          <li>Irreversible Base action requires human confirmation</li>
-          <li>Dynamic queue projection with zero secondary tables</li>
+          <li>Scout records inbound entities and holds no transaction signing authority</li>
+          <li>Clerk reads filed tasks from storage and halts on unverified entities</li>
+          <li>Queue state is projected dynamically from append-only events</li>
+          <li>High-impact onchain actions require explicit human operator confirmation</li>
+          <li>Persistent memory ensures state survives process restarts cleanly</li>
         </ul>
       </div>
     </div>
@@ -210,29 +210,29 @@
   <!-- 7. FAQ Section -->
   <section class="landing-section" id="faq">
     <div class="section-head">
-      <span class="mono-tag">05 / VERIFICATION</span>
+      <span class="mono-tag">05 / DETAILS</span>
       <h2>Frequently Asked Questions</h2>
     </div>
     <div class="faq-grid">
       <div class="faq-item">
-        <h4>What is Scene?</h4>
-        <p>The allowlist you paste at runtime. Empty sources means Scout files nothing and the queue remains empty.</p>
+        <h4>What is the Scene?</h4>
+        <p>The runtime configuration of repositories and wallet addresses monitored by Scout. If the Scene is empty, Scout files no tasks and the queue remains empty.</p>
       </div>
       <div class="faq-item">
-        <h4>Can Clerk invent a person?</h4>
-        <p>No. If an entity is not found in Scout's memory partition, Clerk immediately returns NOT ON RECORD.</p>
+        <h4>How does Clerk verify entities?</h4>
+        <p>Clerk queries the memory partition for the requested entity. If the record does not exist in storage, Clerk stamps the request as not on record and refuses execution.</p>
       </div>
       <div class="faq-item">
-        <h4>Does Scout spend?</h4>
-        <p>No. Scout has no wallet, has no private key, and never signs transactions.</p>
+        <h4>Can Scout broadcast transactions?</h4>
+        <p>No. Scout is strictly limited to reading sources and filing records. It possesses no private keys and cannot sign transactions.</p>
       </div>
       <div class="faq-item">
-        <h4>What is a ping?</h4>
-        <p>One operator-confirmed Base mainnet transaction to a bound address that Scout filed from the Scene.</p>
+        <h4>How do onchain pings work?</h4>
+        <p>When an ask originates from a verified wallet source, Clerk can propose an onchain transaction on Base. Broadcast occurs only after the operator checks confirmation.</p>
       </div>
       <div class="faq-item" style="grid-column: span 2;">
-        <h4>Is there demo data?</h4>
-        <p>No. No preloaded profiles, mock asks, hardcoded wallets, or fake hashes exist in the codebase.</p>
+        <h4>Does the system rely on mock data?</h4>
+        <p>No. OnRecord ships with empty data templates. All records, tasks, and addresses are supplied directly by the operator at runtime.</p>
       </div>
     </div>
   </section>
@@ -240,7 +240,7 @@
   <!-- Mid-Page Call to Action -->
   <section class="mid-cta-section">
     <h2 class="serif-brand">Ready to run the desk?</h2>
-    <p>Open OnRecord and paste your own repository or wallet source.</p>
+    <p>Open OnRecord and configure your own repository or wallet source.</p>
     <a href="/desk" class="btn-primary">Open desk</a>
   </section>
 
