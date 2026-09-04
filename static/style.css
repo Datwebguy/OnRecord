@@ -484,6 +484,7 @@ main.desk-stage {
   border: 1px solid var(--border-oxblood);
   border-radius: 2px;
   overflow: hidden;
+  transition: all 0.2s ease;
 }
 
 .memory-file-head {
@@ -497,19 +498,43 @@ main.desk-stage {
   font-size: 10px;
 }
 
-.memory-file-title {
-  color: var(--brass-accent);
+.memory-file-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.file-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.file-tab-btn:hover {
+  color: var(--text-bone);
+  border-color: var(--brass-dim);
+}
+
+.file-tab-btn.active {
+  background: rgba(196, 163, 90, 0.15);
+  border-color: var(--brass-accent);
+  color: var(--brass-accent);
 }
 
 .memory-file-live {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   color: #55FF88;
   font-size: 9px;
   letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
 .dot-pulse {
@@ -532,20 +557,30 @@ main.desk-stage {
   padding: 8px 10px;
   font-family: var(--font-mono);
   font-size: 10px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--text-bone);
-  max-height: 150px;
+  max-height: 160px;
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-all;
   background: #050404;
 }
 
+.memory-file-code .line-num {
+  color: var(--text-dim);
+  user-select: none;
+  display: inline-block;
+  width: 18px;
+  text-align: right;
+  margin-right: 8px;
+  opacity: 0.5;
+}
+
 .memory-file-foot {
-  padding: 5px 10px;
+  padding: 6px 10px;
   font-size: 9px;
   font-family: var(--font-mono);
-  color: var(--text-dim);
+  color: var(--brass-dim);
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-ground);
   font-style: italic;

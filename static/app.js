@@ -1,6 +1,35 @@
 let currentActiveTaskId = null;
 let cachedSceneSources = [];
 let cachedQueueCount = 0;
+let activeMemoryFileTab = "person";
+let activeTaskPersonData = null;
+let activeTaskAskData = null;
+
+function formatCodeWithLineNumbers(obj) {
+  if (!obj) return "";
+  const jsonStr = JSON.stringify(obj, null, 2);
+  const lines = jsonStr.split("\n");
+  return lines.map((line, idx) => {
+    const num = (idx + 1).toString().padStart(2, " ");
+    const safeLine = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return `<span class="line-num">${num}</span>  ${safeLine}`;
+  }).join("\n");
+}
+
+function switchMemoryFileTab(tabName) {
+  activeMemoryFileTab = tabName;
+  const personBtn = document.getElementById("tab-btn-person");
+  const askBtn = document.getElementById("tab-btn-ask");
+  const codeEl = document.getElementById("memory-file-code-content");
+  
+  if (personBtn) personBtn.classList.toggle("active", tabName === "person");
+  if (askBtn) askBtn.classList.toggle("active", tabName === "ask");
+  
+  if (codeEl) {
+    const dataToDisplay = tabName === "person" ? activeTaskPersonData : activeTaskAskData;
+    codeEl.innerHTML = formatCodeWithLineNumbers(dataToDisplay);
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
@@ -289,6 +318,10 @@ async function loadTaskDetails(taskId) {
     
     const sourceDisplay = (ask.source || "").replace(/^repo:/, "").replace(/@8453$/, "");
     
+    activeTaskPersonData = person;
+    activeTaskAskData = ask;
+    const initialFileCode = formatCodeWithLineNumbers(activeMemoryFileTab === "person" ? person : ask);
+
     container.innerHTML = `
       <div class="inspector-panel">
         <div class="inspector-head">
@@ -321,16 +354,19 @@ async function loadTaskDetails(taskId) {
         <!-- Sibyl Memory Live File View (Builder Tip 02/04) -->
         <div class="memory-file-box">
           <div class="memory-file-head">
-            <span class="memory-file-title">person.json & ask.json</span>
+            <div class="memory-file-tabs">
+              <button type="button" id="tab-btn-person" class="file-tab-btn ${activeMemoryFileTab === 'person' ? 'active' : ''}" onclick="switchMemoryFileTab('person')">
+                person.json
+              </button>
+              <button type="button" id="tab-btn-ask" class="file-tab-btn ${activeMemoryFileTab === 'ask' ? 'active' : ''}" onclick="switchMemoryFileTab('ask')">
+                ask.json
+              </button>
+            </div>
             <span class="memory-file-live"><span class="dot-pulse"></span> READING LIVE FROM SIBYL MEMORY</span>
           </div>
-          <pre class="memory-file-code"><code>${JSON.stringify({
-            tenant: "tenant_scout",
-            person: person,
-            ask: ask
-          }, null, 2)}</code></pre>
+          <pre class="memory-file-code"><code id="memory-file-code-content">${initialFileCode}</code></pre>
           <div class="memory-file-foot">
-            The answer on screen came from this file in Sibyl Memory, not the chat history.
+            This record came from this file in storage, not chat history.
           </div>
         </div>
         
