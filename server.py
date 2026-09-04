@@ -50,6 +50,14 @@ def read_brand():
         return FileResponse(str(brand_path))
     raise HTTPException(status_code=404, detail="Brand page not found.")
 
+@app.get("/deck")
+@app.get("/presentation")
+def read_deck():
+    deck_path = Path(__file__).parent / "pitch_deck.html"
+    if deck_path.exists():
+        return FileResponse(str(deck_path))
+    raise HTTPException(status_code=404, detail="Pitch deck presentation not found.")
+
 # ==========================================
 # SCENE & REFERENCE ENDPOINTS (tenant_desk)
 # ==========================================
