@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OnRecord — Brand Identity Assets & Downloads</title>
+  <link rel="stylesheet" href="/static/landing.css">
+  <style>
+    body {
+      background-color: #0B0A09;
+      color: #E8E0D4;
+      font-family: var(--font-sans);
+      padding-bottom: 80px;
+    }
+    .brand-page-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid #24201C;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #141210;
+    }
+    .brand-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 48px 32px;
+    }
+    .section-title {
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #24201C;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .section-title h2 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #E8E0D4;
+    }
+    .assets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 32px;
+      margin-bottom: 64px;
+    }
+    .asset-card {
+      background: #141210;
+      border: 1px solid #24201C;
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .asset-card:hover {
+      border-color: #C4A35A;
+      transform: translateY(-2px);
+    }
+    .asset-preview {
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .asset-preview.dark-bg {
+      background: #0B0A09;
+    }
+    .asset-preview.light-bg {
+      background: #E8E0D4;
+    }
+    .asset-preview img {
+      max-width: 85%;
+      max-height: 75%;
+      object-fit: contain;
+    }
+    .poster-card .asset-preview {
+      height: 420px;
+      padding: 0;
+      background: #070605;
+    }
+    .poster-card .asset-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .asset-info {
+      padding: 20px;
+      border-top: 1px solid #24201C;
+      background: #141210;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+    .asset-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #E8E0D4;
+    }
+    .asset-desc {
+      font-size: 13px;
+      color: #9E9486;
+      line-height: 1.5;
+    }
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #C81E1E;
+      color: #FFFFFF;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      padding: 10px 18px;
+      border-radius: 2px;
+      text-decoration: none;
+      transition: background 0.15s ease;
+      margin-top: auto;
+    }
+    .btn-download:hover {
+      background: #E02828;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="brand-page-header">
+    <div style="display:flex; align-items:center; gap:16px;">
+      <a href="/" title="OnRecord Home">
+        <img src="/static/brand/onrecord_logo_dark.png" alt="OnRecord" style="height:24px; width:auto; display:block;" />
+      </a>
+      <span class="mono-tag" style="border-left:1px solid #24201C; padding-left:16px;">BRAND IDENTITY ASSETS</span>
+    </div>
+    <div style="display:flex; gap:16px; align-items:center;">
+      <a href="/desk" class="btn-primary" style="font-size:12px; padding:8px 16px;">Open Desk &rarr;</a>
+      <a href="/" class="nav-link">&larr; Back to Home</a>
+    </div>
+  </header>
+
+  <div class="brand-container">
+
+    <div class="section-title">
+      <div>
+        <span class="mono-tag">01 / MASTER WORDMARKS</span>
+        <h2>Transparent Vector Wordmarks</h2>
+      </div>
+      <p style="font-size:13px; color:#9E9486; max-width:480px; text-align:right;">
+        Custom typography with the central Signal Red tally dot [● REC] and the two-rail mechanical stencil cut in the letter R.
+      </p>
+    </div>
+
+    <div class="assets-grid">
+      <div class="asset-card">
+        <div class="asset-preview dark-bg">
+          <img src="/static/brand/onrecord_logo_dark.png" alt="Dark Theme Logo" />
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">Dark Theme Master Logo</div>
+          <div class="asset-desc">Bone White (#E8E0D4) letterforms with Signal Red (#C81E1E) tally dot. Isolated with transparent background.</div>
+          <a href="/static/brand/onrecord_logo_dark.png" download="onrecord_logo_dark.png" class="btn-download">
+            &darr; Download Transparent PNG
+          </a>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="asset-preview light-bg">
+          <img src="/static/brand/onrecord_logo_light.png" alt="Light Theme Logo" />
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">Light Theme Master Logo</div>
+          <div class="asset-desc">Pitch Obsidian (#0B0A09) letterforms with Signal Red (#C81E1E) tally dot. Isolated with transparent background.</div>
+          <a href="/static/brand/onrecord_logo_light.png" download="onrecord_logo_light.png" class="btn-download">
+            &darr; Download Transparent PNG
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <div>
+        <span class="mono-tag">02 / POSTER EDITIONS</span>
+        <h2>Full-Scale 2D Graphic Posters</h2>
+      </div>
+      <p style="font-size:13px; color:#9E9486; max-width:480px; text-align:right;">
+        Pure 2D vector graphic design posters with high-voltage color fields and unyielding typographic contrast.
+      </p>
+    </div>
+
+    <div class="assets-grid">
+      <div class="asset-card poster-card">
+        <div class="asset-preview">
+          <img src="/static/brand/onrecord_voltage_edition.jpg" alt="Voltage Edition Poster" />
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">Voltage Edition</div>
+          <div class="asset-desc">Electric Acid Chartreuse field (#D4FF00) with pitch black custom typography and red recording core. Ultra-high contrast.</div>
+          <a href="/static/brand/onrecord_voltage_edition.jpg" download="onrecord_voltage_edition.jpg" class="btn-download">
+            &darr; Download High-Res Poster
+          </a>
+        </div>
+      </div>
+
+      <div class="asset-card poster-card">
+        <div class="asset-preview">
+          <img src="/static/brand/onrecord_archival_bone_edition.jpg" alt="Archival Bone Edition Poster" />
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">Archival Bone Edition</div>
+          <div class="asset-desc">Warm tactile Ivory Bone field (#E8E0D4) matching OnRecord core UI palette. Quiet luxury and institutional authority.</div>
+          <a href="/static/brand/onrecord_archival_bone_edition.jpg" download="onrecord_archival_bone_edition.jpg" class="btn-download">
+            &darr; Download High-Res Poster
+          </a>
+        </div>
+      </div>
+
+      <div class="asset-card poster-card">
+        <div class="asset-preview">
+          <img src="/static/brand/onrecord_darkroom_edition.jpg" alt="Darkroom Edition Poster" />
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">Darkroom Edition</div>
+          <div class="asset-desc">Obsidian Ground (#0B0A09) with condensed bone white typography and the glowing red recording stamp dot.</div>
+          <a href="/static/brand/onrecord_darkroom_edition.jpg" download="onrecord_darkroom_edition.jpg" class="btn-download">
+            &darr; Download High-Res Poster
+          </a>
+        </div>
+      </div>
+
+      <div class="asset-card poster-card">
+        <div class="asset-preview">
+          <img src="/static/brand/onrecord_acid_brass_edition.jpg" alt="Acid Brass Edition Poster" />
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">Acid Brass Edition</div>
+          <div class="asset-desc">Technical amber-brass field with heavy neo-grotesque black letterforms. Modernist industrial aesthetic.</div>
+          <a href="/static/brand/onrecord_acid_brass_edition.jpg" download="onrecord_acid_brass_edition.jpg" class="btn-download">
+            &darr; Download High-Res Poster
+          </a>
+        </div>
+      </div>
+
+      <div class="asset-card poster-card">
+        <div class="asset-preview">
+          <img src="/static/brand/onrecord_signal_vermilion_edition.jpg" alt="Signal Vermilion Edition Poster" />
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">Signal Vermilion Edition</div>
+          <div class="asset-desc">Stark OnRecord red field with bone-white and black dual-tone typography. Swiss poster style.</div>
+          <a href="/static/brand/onrecord_signal_vermilion_edition.jpg" download="onrecord_signal_vermilion_edition.jpg" class="btn-download">
+            &darr; Download High-Res Poster
+          </a>
+        </div>
+      </div>
+
+      <div class="asset-card poster-card">
+        <div class="asset-preview">
+          <img src="/static/brand/onrecord_minimal_lime_edition.jpg" alt="Minimal Lime Edition Poster" />
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">Minimal Lime Edition</div>
+          <div class="asset-desc">Clean, bold Swiss typography on an electric lime backdrop. Direct aesthetic peer to Pilot44.</div>
+          <a href="/static/brand/onrecord_minimal_lime_edition.jpg" download="onrecord_minimal_lime_edition.jpg" class="btn-download">
+            &darr; Download High-Res Poster
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -43,6 +43,13 @@ def read_desk():
         return FileResponse(str(index_path))
     return {"message": "OnRecord Desk UI is ready."}
 
+@app.get("/brand")
+def read_brand():
+    brand_path = STATIC_DIR / "brand.html"
+    if brand_path.exists():
+        return FileResponse(str(brand_path))
+    raise HTTPException(status_code=404, detail="Brand page not found.")
+
 # ==========================================
 # SCENE & REFERENCE ENDPOINTS (tenant_desk)
 # ==========================================

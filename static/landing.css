@@ -100,6 +100,30 @@ header.landing-nav {
   font-size: 20px;
 }
 
+.nav-brand-logo {
+  height: 22px;
+  width: auto;
+  display: block;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.nav-brand:hover .nav-brand-logo {
+  opacity: 0.88;
+  transform: scale(1.02);
+}
+
+.hero-logo-wrap {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.hero-brand-logo {
+  height: 62px;
+  width: auto;
+  max-width: 100%;
+  display: block;
+}
+
 .nav-tagline {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -588,6 +612,18 @@ footer.landing-footer {
 
 .footer-left .serif-brand {
   font-size: 18px;
+}
+
+.footer-brand-logo {
+  height: 20px;
+  width: auto;
+  display: block;
+  margin-bottom: 6px;
+  transition: opacity 0.15s ease;
+}
+
+.footer-left a:hover .footer-brand-logo {
+  opacity: 0.85;
 }
 
 .footer-left p {

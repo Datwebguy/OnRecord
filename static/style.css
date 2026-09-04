@@ -104,9 +104,22 @@ header.desk-nav {
   align-items: center;
 }
 
-.brand-block h1 {
-  font-size: 20px;
-  color: #FFFFFF;
+.brand-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.desk-brand-logo {
+  height: 24px;
+  width: auto;
+  display: block;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.brand-link:hover .desk-brand-logo {
+  opacity: 0.85;
+  transform: scale(1.02);
 }
 
 .status-strip {
