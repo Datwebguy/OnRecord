@@ -1,136 +1,169 @@
 # OnRecord
 
-> **Scout files. Clerk only acts on what is on record.**
+<p align="center">
+  <img src="https://img.shields.io/badge/Network-Base%20Mainnet%20(8453)-0052FF?style=for-the-badge&logo=coinbase&logoColor=white" alt="Base Mainnet" />
+  <img src="https://img.shields.io/badge/Storage-Sibyl%20Memory%20Client-8A2BE2?style=for-the-badge" alt="Sibyl Memory" />
+  <img src="https://img.shields.io/badge/Architecture-Two%20Role%20Desk-C4A35A?style=for-the-badge" alt="Architecture" />
+  <img src="https://img.shields.io/badge/License-MIT-C81E1E?style=for-the-badge" alt="License" />
+</p>
 
-OnRecord is a two-agent desk for incoming work. Work moves strictly as filed records across isolated memory partitions, and the irreversible onchain step requires explicit human operator confirmation.
+### Scout files. Clerk only acts on what is on record.
+
+OnRecord is an audit-proof operational desk for incoming work. Autonomous agent systems frequently collapse when downstream execution relies on unverified conversation memory rather than durable state. When an agent acts on assumptions that were never filed into memory, records drift, tasks duplicate, and actions execute without accountability. OnRecord solves this by separating observation from execution across isolated memory partitions: Scout monitors incoming channels and files work into storage, Clerk verifies records and inspects pending tasks, and the human operator retains exclusive confirmation authority over irreversible onchain settlement on Base.
 
 ```
-You (Operator)
-  │  set Scene at runtime, confirm the one hard action
-  ▼
-Scout (tenant_scout)           Clerk (tenant_clerk)
-read + file                    act only on files
-     │                              ▲
-     └─────────── handoff ──────────┘
-                  COLD event
-             no row = no action
+       Operator Allowlist (Scene Reference)
+                        │
+                        ▼
+      ┌───────────────────────────────────┐
+      │       SCOUT (tenant_scout)        │
+      │   Observes Repositories & Wallets │
+      │   Files Person & Ask to WARM      │
+      │   Zero Signing Key · Zero Spend   │
+      └─────────────────┬─────────────────┘
+                        │
+                 COLD Event Handoff
+           ("filed ask_... -> task_...")
+                        │
+                        ▼
+      ┌───────────────────────────────────┐
+      │       CLERK (tenant_clerk)        │
+      │   Projects Backlog from Events    │
+      │   Verifies Entities in Storage    │
+      │   Missing Record = NOT ON RECORD  │
+      └─────────────────┬─────────────────┘
+                        │
+             Human Operator Confirmation
+                        │
+                        ▼
+      ┌───────────────────────────────────┐
+      │       BASE MAINNET (8453)         │
+      │   Authentic Onchain Settlement    │
+      └───────────────────────────────────┘
 ```
 
 ---
 
 ## Where Sibyl Memory is Load-Bearing (Judge Fast-Path)
 
-Sibyl Memory sits on the critical execution path of OnRecord. Isolation is the product: all three tenants (`tenant_scout`, `tenant_clerk`, `tenant_desk`) share a single database (`data/onrecord.db`), but neither agent can access or mutate the other's brain.
+Sibyl Memory serves as the foundational execution spine of OnRecord. The platform utilizes the official `sibyl-memory-client` library configured against a local SQLite storage engine located at `data/onrecord.db`. The system enforces strict multi-tenant isolation, partitioning the memory store into three distinct tenant spaces: `tenant_scout`, `tenant_clerk`, and `tenant_desk`. While all tenants share the physical database, each agent role is strictly scoped to its assigned tenant namespace and cannot directly mutate the internal state of another.
 
-Judges can inspect the exact memory calls in under 2 minutes:
+Judges can inspect the primary memory call sites across the codebase:
 
-### 1. Scout Write Path
-File: [`scout/engine.py`](file:///c:/Users/DELL/Downloads/OnRecord/scout/engine.py)
-- **Filing Logic**: Scout files asks it finds (e.g. inbound activity on a watched wallet or actual retrieved issue authors on a repo), not the repository owner by default. Wallet sources file directly with `bound` address.
-- **`set_entity` (WARM Person)**: `scout_client.set_entity("person", person_name, person_body)`
-- **`set_entity` (WARM Ask)**: `scout_client.set_entity("ask", ask_id, ask_body)`
-- **`write_event` (COLD Event Handoff)**: `scout_client.write_event(acted=[f"filed {ask_id} person={person_name} -> {task_id}"], extra={"ask_id": ask_id, "person": person_name, "task_id": task_id, "source": src})`
+### 1. Scout Ingestion & Write Path
+Located in [`scout/engine.py`](file:///c:/Users/DELL/Downloads/OnRecord/scout/engine.py):
 
-### 2. Clerk Read Path (Zero Writes)
-File: [`clerk/engine.py`](file:///c:/Users/DELL/Downloads/OnRecord/clerk/engine.py)
-- **`get_queue`**: `scout_client.read_events(limit=1000)` filters for `acted` starting with `"filed "`. Cross-checks against `clerk_client.read_events(limit=1000)` to project pending tasks dynamically. No secondary database table or cached memory is used.
-- **`check_person` (`NOT ON RECORD`)**: `scout_client.get_entity("person", name)`. If the record was never filed, Clerk halts and stamps **`NOT ON RECORD`**.
+Scout reads allowed sources configured by the operator in `tenant_desk` reference storage. When inbound activity is detected, Scout populates canonical entity files inside its WARM tier via `scout_client.set_entity("person", person_name, person_body)` and `scout_client.set_entity("ask", ask_id, ask_body)`. Scout then commits an append-only event to its COLD tier using `scout_client.write_event(acted=[f"filed {ask_id} person={person_name} -> {task_id}"], extra={...})`. Scout possesses no wallet credentials, no private keys, and no transaction signing capabilities.
 
-### 3. Clerk Write Path (Action on Record)
-File: [`clerk/engine.py`](file:///c:/Users/DELL/Downloads/OnRecord/clerk/engine.py)
-- **`open_task`**: `clerk_client.write_event(acted=[f"opened {task_id}"], ...)`, sets WARM `task`, and sets HOT state `open_task`.
-- **`skip_task`**: `clerk_client.write_event(acted=[f"skipped {task_id}"], ...)`.
-- **`ping_task`**: `clerk_client.write_event(acted=[f"pinged {task_id} tx={tx_hash}"], ...)` or `clerk_client.write_event(acted=[f"blocked {task_id} reason={reason}"], ...)`.
+### 2. Clerk Inspection & Read Path
+Located in [`clerk/engine.py`](file:///c:/Users/DELL/Downloads/OnRecord/clerk/engine.py):
 
----
+Clerk computes the pending backlog dynamically using event projection. Calling `get_queue()` reads the COLD event stream from `tenant_scout` and cross-references it against historical actions recorded in `tenant_clerk`. If a task has no corresponding action event, it appears in the queue. No secondary mutable database tables or caching layers exist. 
 
-## Where Base is Used
+When an entity identity is queried in `check_person(name)`, Clerk inspects `tenant_scout` storage. If the record does not exist, Clerk immediately stamps the request as `NOT ON RECORD` and halts all execution.
 
-- **Network**: Base Mainnet (Chain ID `8453`, RPC `https://mainnet.base.org`).
-- **Bound Addresses**: `Person.bound` is populated exclusively from operator-specified `wallet:` or `dune:address:` sources. Repo-only sources have `bound=""` and cannot be pinged.
-- **Operator Confirmation**: Clerk never pings autonomously. The operator must check the confirmation box and supply `BASE_PRIVATE_KEY` for an onchain transaction to broadcast.
-- **Authentic Hashes**: If unconfirmed or missing a signing key, Clerk logs a `blocked` COLD event. Fake hashes and simulation previews are strictly rejected.
-- Implementation: [`shared/base_client.py`](file:///c:/Users/DELL/Downloads/OnRecord/shared/base_client.py) (`execute_base_ping`) and [`clerk/engine.py`](file:///c:/Users/DELL/Downloads/OnRecord/clerk/engine.py) (`ping_task`).
+### 3. Clerk Execution & Base Settlement
+Located in [`clerk/engine.py`](file:///c:/Users/DELL/Downloads/OnRecord/clerk/engine.py) and [`shared/base_client.py`](file:///c:/Users/DELL/Downloads/OnRecord/shared/base_client.py):
+
+When opening a task, Clerk writes an `opened` event to its COLD stream, sets a WARM `task` entity, and records active context in HOT state. When skipping, Clerk commits a `skipped` event to COLD storage. 
+
+When executing a ping, Clerk verifies that the target Person has a valid bound wallet address. If confirmed by the human operator, Clerk broadcasts a transaction to Base Mainnet using `execute_base_ping()` and writes a `pinged` event containing the verified transaction hash. If operator confirmation is missing or prerequisites fail, Clerk writes a `blocked` event with the specific reason. Clerk never simulates or fabricates transaction hashes.
 
 ---
 
-## Architecture & Memory Stores
+## Tiered Memory Architecture
 
-| Store | Tenant | Role | Purpose |
+OnRecord maps directly to the five enforced tiers of Sibyl Memory:
+
+| Memory Tier | Active Tenant | Assigned Role | Architectural Purpose |
 |---|---|---|---|
-| **WARM** | `tenant_scout` | Scout | `Person`, `Repo`, `Ask` entities |
-| **COLD** | `tenant_scout` | Scout | Append-only event journal (`filed ...`) |
-| **WARM** | `tenant_clerk` | Clerk | `Task` entities |
-| **COLD** | `tenant_clerk` | Clerk | Action journal (`opened`, `skipped`, `pinged`, `blocked`) |
-| **REFERENCE** | `tenant_desk` | Operator | Policy `Charter` and runtime `Scene` sources |
-| **HOT** | `tenant_clerk` | Clerk | `open_task` active state |
+| **WARM** | `tenant_scout` | Scout | Canonical storage for `Person` and `Ask` entities |
+| **COLD** | `tenant_scout` | Scout | Append-only event journal recording `filed` handoffs |
+| **WARM** | `tenant_clerk` | Clerk | Canonical storage for processed `Task` records |
+| **COLD** | `tenant_clerk` | Clerk | Action journal recording `opened`, `skipped`, `pinged`, and `blocked` events |
+| **HOT** | `tenant_clerk` | Clerk | Ephemeral execution state tracking the currently inspected task |
+| **REFERENCE** | `tenant_desk` | Operator | Storage for the system `Charter` and operator runtime `Scene` sources |
 
 ---
 
-## Zero Hardcoded Data Policy
+## Base Mainnet Settlement
 
-- `scene.json` ships empty (`"sources": []`).
-- No preloaded people, wallets, repository constants, or sample cards exist in the repo or runtime defaults.
-- All IDs (`ask_<hash>`, `task_<hash>`) are generated dynamically from live operator inputs.
-- Empty Scene $\rightarrow$ 0 Scout filings $\rightarrow$ Empty Queue.
+All onchain activity occurs on Base Mainnet under Chain ID `8453` using public JSON-RPC infrastructure. Bound addresses originate strictly from operator-specified wallet sources (`wallet:0x...` or `dune:address:0x...`). Repository-only sources are assigned an empty bound string and cannot receive onchain transactions. 
+
+Clerk strictly enforces human-in-the-loop governance. Every transaction requires an explicit confirmation check from the operator before broadcast. If the signing key is absent or confirmation is withheld, Clerk logs a blocked notice and preserves the system state.
 
 ---
 
-## Quickstart
+## Zero Hardcoded Data Guarantee
 
-### 1. Run the Desk Server
+The platform ships with an empty Scene template (`sources: []`). No preloaded user personas, sample repository constants, or placeholder wallet addresses exist anywhere in the application defaults. All identifiers (`ask_<hash>`, `task_<hash>`) are derived dynamically at runtime from operator inputs. An empty Scene results in zero Scout filings, which produces a completely empty queue.
+
+---
+
+## Quickstart Guide
+
+### 1. Launch the Server
+Execute the application server using Uvicorn:
 ```bash
 uvicorn server:app --port 8000
 ```
-Open [http://localhost:8000](http://localhost:8000) in your browser.
+Navigate to `http://localhost:8000/desk` to open the operational desk.
 
 ### 2. Operator Workflow
-1. **Scene Form**: Enter a Desk Name and paste your own sources (e.g. `repo:owner/name` or `wallet:0x<your address>@8453`). Click **Save Scene**.
-2. **Run Scout**: Click **Run Scout**. Scout queries live endpoints and files records into `tenant_scout`.
-3. **Queue & Clerk**: Filed tasks appear in the Queue column. Click a task to view the Person Card and Ask.
-4. **Verifier**: Use the Clerk Verifier input to test any person name. If not filed by Scout, it stamps **`NOT ON RECORD`**.
-5. **Base Ping**: For tasks with a bound address, check the confirmation box and click **Confirm & Send Ping** to broadcast on Base.
+1. Configure Sources: In the top Scene bar, enter the GitHub repository (e.g. `owner/repo`) and Base wallet address to monitor, then click **Save Scene**.
+2. Run Scout: Click **Run Scout** to discover inbound work. Scout parses incoming activity and commits structured files into `tenant_scout`.
+3. Inspect Queue: Newly filed tasks populate the Queue column. Click any task card to open the Clerk inspector panel.
+4. Verify Entities: Enter an identity in the top-right verifier and click **Check**. If the entity was never filed by Scout, Clerk stamps `NOT ON RECORD`.
+5. Execute Actions: Choose to open, skip, or confirm an onchain Base ping for wallet-bound contributors.
 
 ---
 
-## Recall & Delete Verification
+## Memory Verification & The Delete Test
 
-### In-Browser Recall
-1. Start the server: `uvicorn server:app --port 8000`.
-2. Add your source and click **Run Scout** (Session A).
-3. Stop the `uvicorn` process completely (`Ctrl+C`).
-4. Start `uvicorn server:app --port 8000` again (Session B).
-5. Refresh the page: the filed tasks and history are instantly loaded from `data/onrecord.db` with zero chat context or in-memory state.
+The repository provides automated verification scripts demonstrating load-bearing memory properties across separate operating system processes.
 
-### Automated Script Recall
-Optionally run the multi-process verification runner passing your own live source:
-
+### Multi-Process Recall Verification
+Run the recall test script to observe state persistence across distinct process lifecycles:
 ```bash
-# Empty Scene check (asserts 0 filings and empty queue)
-python scripts/recall.py
+python scripts/recall.py --name "Desk" --sources repo:fastapi/fastapi wallet:0x75a0c2d1df51c07982de3ff031e5232518676b19@8453
+```
+Session A boots under a specific process ID, files records into memory, and terminates. Session B starts under a completely new process ID with zero in-memory variables, reconstructs the task backlog directly from `data/onrecord.db`, and validates entity verification.
 
-# Multi-process recall with your own source
-python scripts/recall.py --name "Desk" --sources repo:owner/name wallet:0xYOURADDRESS@8453
+### Automated Judge Proof Script
+Execute the unified proof runner:
+```bash
+python scripts/proof.py
+```
+PowerShell users can run:
+```powershell
+pwsh -File scripts/proof.ps1
 ```
 
-### The Delete Test (How Memory Made This Possible)
-When `tenant_scout` memory is deleted:
-1. The Queue dries up immediately (`queue = []`).
-2. Clerk has nothing to open and cannot recall previous identities (`check_person` returns `NOT_ON_RECORD`).
-3. Live chain and GitHub sources continue to exist, but OnRecord's desk is cleanly reset.
+### The Delete Test
+The delete test demonstrates that memory is strictly load-bearing:
+1. When `tenant_scout` rows are wiped from `data/onrecord.db`, the projected backlog immediately drops to zero.
+2. Previously filed entity names queried against Clerk return `NOT ON RECORD`.
+3. The underlying GitHub and blockchain endpoints continue to exist, but the desk's operational state cleanly disappears.
 
 ---
 
-## Prior Work
+## Automated Test Suite
 
-OnRecord builds on the principles of:
-- **Sibyl Memory**: Multi-tenant partitioned memory for agent architectures.
-- **Base**: Ethereum Layer-2 for verified onchain settlement and pings.
-- **Event Sourcing & CQRS**: Projecting task queues dynamically from append-only COLD journals without redundant mutable tables.
-- **Least-Privilege Role Separation**: Separating read/file agents (Scout) from action agents (Clerk), with irrevocable actions mediated by human operators.
+Run the full pytest integration suite:
+```bash
+python -m pytest tests/
+```
+The test suite validates source format regular expressions, verifies zero-write behavior on empty scenes, tests cross-session recall, and executes the tenant deletion proof.
+
+---
+
+## Contributor
+
+**Datwebguy**
+GitHub: [https://github.com/Datwebguy](https://github.com/Datwebguy)
 
 ---
 
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for complete terms.

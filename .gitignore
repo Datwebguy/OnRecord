@@ -5,3 +5,10 @@ scene.json
 __pycache__/
 *.pyc
 .pytest_cache/
+scratch/
+hackathon.md
+prj.md
+product.md
+resources.md
+handover.md
+memory.md
