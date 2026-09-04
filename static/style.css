@@ -478,6 +478,79 @@ main.desk-stage {
   gap: 8px;
 }
 
+/* Sibyl Memory Live File View (Builder Tip 02/04) */
+.memory-file-box {
+  background: #070605;
+  border: 1px solid var(--border-oxblood);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.memory-file-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: rgba(92, 18, 18, 0.25);
+  border-bottom: 1px solid rgba(196, 163, 90, 0.2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.memory-file-title {
+  color: var(--brass-accent);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.memory-file-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #55FF88;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+.dot-pulse {
+  width: 6px;
+  height: 6px;
+  background-color: #55FF88;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 6px #55FF88;
+  animation: pulseLiveDot 1.6s infinite ease-in-out;
+}
+
+@keyframes pulseLiveDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.memory-file-code {
+  margin: 0;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--text-bone);
+  max-height: 150px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: #050404;
+}
+
+.memory-file-foot {
+  padding: 5px 10px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-ground);
+  font-style: italic;
+}
+
 .base-deck {
   background: var(--bg-oxblood);
   border: 1px solid var(--border-oxblood);

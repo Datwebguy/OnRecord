@@ -318,6 +318,22 @@ async function loadTaskDetails(taskId) {
           </div>
         </div>
         
+        <!-- Sibyl Memory Live File View (Builder Tip 02/04) -->
+        <div class="memory-file-box">
+          <div class="memory-file-head">
+            <span class="memory-file-title">person.json & ask.json</span>
+            <span class="memory-file-live"><span class="dot-pulse"></span> READING LIVE FROM SIBYL MEMORY</span>
+          </div>
+          <pre class="memory-file-code"><code>${JSON.stringify({
+            tenant: "tenant_scout",
+            person: person,
+            ask: ask
+          }, null, 2)}</code></pre>
+          <div class="memory-file-foot">
+            The answer on screen came from this file in Sibyl Memory, not the chat history.
+          </div>
+        </div>
+        
         <!-- Actions -->
         <div class="action-row">
           <button type="button" class="btn-primary" onclick="openTaskAction('${taskId}')" ${clerkStatus !== 'open' ? 'disabled' : ''}>
