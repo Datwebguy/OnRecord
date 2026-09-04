@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
   document.getElementById("btn-save-scene").addEventListener("click", handleSaveScene);
   document.getElementById("btn-run-scout").addEventListener("click", handleRunScout);
+  document.getElementById("btn-clear-scene")?.addEventListener("click", handleClearScene);
   document.getElementById("btn-verify-person").addEventListener("click", handleVerifyPerson);
   document.getElementById("verify-person-input").addEventListener("keypress", (e) => {
     if (e.key === "Enter") handleVerifyPerson();
@@ -161,6 +162,28 @@ async function handleSaveScene() {
     await refreshAll();
   } catch (err) {
     alert("Error saving scene: " + err.message);
+  }
+}
+
+async function handleClearScene() {
+  const repoInput = document.getElementById("scene-repo");
+  const walletInput = document.getElementById("scene-wallet");
+  if (repoInput) repoInput.value = "";
+  if (walletInput) walletInput.value = "";
+  
+  try {
+    const res = await fetch("/api/scene", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "OnRecord Desk", sources: [] })
+    });
+    if (res.ok) {
+      showToast("Scene cleared.");
+      await loadScene();
+      await refreshAll();
+    }
+  } catch (err) {
+    alert("Error clearing scene: " + err.message);
   }
 }
 

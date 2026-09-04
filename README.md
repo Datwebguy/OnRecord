@@ -129,7 +129,7 @@ The repository provides automated verification scripts demonstrating load-bearin
 ### Multi-Process Recall Verification
 Run the recall test script to observe state persistence across distinct process lifecycles:
 ```bash
-python scripts/recall.py --name "Desk" --sources repo:fastapi/fastapi wallet:0x75a0c2d1df51c07982de3ff031e5232518676b19@8453
+python scripts/recall.py --name "Desk" --sources repo:fastapi/fastapi wallet:0x000000000000000000000000000000000000dEaD@8453
 ```
 Session A boots under a specific process ID, files records into memory, and terminates. Session B starts under a completely new process ID with zero in-memory variables, reconstructs the task backlog directly from `data/onrecord.db`, and validates entity verification.
 
