@@ -271,6 +271,22 @@ async function loadTaskDetails(taskId) {
       tabText = "BLOCKED";
     }
     
+    let blockedReason = "Execution blocked";
+    const rawError = data.clerk_info?.extra?.error || "";
+    if (rawError) {
+      if (rawError.includes("BASE_PRIVATE_KEY") || rawError.includes("not provided") || rawError.includes("signing key")) {
+        blockedReason = "Missing signing key in environment";
+      } else if (rawError.includes("bound address") || rawError.includes("no bound")) {
+        blockedReason = "Needs a wallet on this person";
+      } else if (rawError.includes("confirmation required") || rawError.includes("Operator confirmation")) {
+        blockedReason = "Operator confirmation required";
+      } else if (rawError.includes("insufficient") || rawError.includes("gas") || rawError.includes("funds")) {
+        blockedReason = "Insufficient Base ETH for gas";
+      } else {
+        blockedReason = rawError.length > 50 ? rawError.slice(0, 50) + "..." : rawError;
+      }
+    }
+    
     const sourceDisplay = (ask.source || "").replace(/^repo:/, "").replace(/@8453$/, "");
     
     container.innerHTML = `
@@ -330,7 +346,7 @@ async function loadTaskDetails(taskId) {
           ` : ''}
           ${clerkStatus === 'blocked' ? `
             <div class="alert-stamp nor" style="margin-top: 4px;">
-              Couldn't send: Missing signing key in environment
+              Couldn't send: ${blockedReason}
             </div>
           ` : ''}
           ${clerkStatus === 'pinged' ? `

@@ -26,24 +26,25 @@ class ClerkEngine:
             for ev in events:
                 acted = ev.get("acted") or []
                 extra = ev.get("extra") or {}
-                task_id = extra.get("task_id")
+                base_task_id = extra.get("task_id")
                 
                 for act in acted:
                     if not isinstance(act, str):
                         continue
                     parts = act.split()
                     verb = parts[0] if parts else ""
-                    if not task_id and len(parts) > 1:
-                        task_id = parts[1]
+                    task_id = base_task_id or (parts[1] if len(parts) > 1 else None)
                     
                     if task_id and verb in ("opened", "skipped", "pinged", "blocked"):
-                        actions[task_id] = {
-                            "status": verb,
-                            "event_id": ev.get("id"),
-                            "ts": ev.get("ts"),
-                            "act": act,
-                            "extra": extra
-                        }
+                        # read_events is sorted by ts DESC (newest first). Keep the newest action.
+                        if task_id not in actions:
+                            actions[task_id] = {
+                                "status": verb,
+                                "event_id": ev.get("id"),
+                                "ts": ev.get("ts"),
+                                "act": act,
+                                "extra": extra
+                            }
         except Exception:
             pass
         return actions
@@ -56,6 +57,7 @@ class ClerkEngine:
         """
         clerk_actions = self.get_clerk_action_history()
         queue = []
+        seen_tasks: Set[str] = set()
         
         try:
             scout_events = self.scout_client.read_events(limit=1000)
@@ -76,7 +78,8 @@ class ClerkEngine:
                             if len(parts) == 2:
                                 task_id = parts[1].strip()
 
-                        if task_id and task_id not in clerk_actions:
+                        if task_id and task_id not in clerk_actions and task_id not in seen_tasks:
+                            seen_tasks.add(task_id)
                             queue.append({
                                 "task_id": task_id,
                                 "ask_id": ask_id,
@@ -95,20 +98,47 @@ class ClerkEngine:
         Returns ON_RECORD with body, or stamps NOT ON RECORD on miss.
         """
         clean_name = sanitize_identifier(name)
+        # 1. Direct entity lookup
         try:
             entity = self.scout_client.get_entity("person", clean_name)
-            body = entity.get("body", entity)
-            return {
-                "status": "ON_RECORD",
-                "name": clean_name,
-                "person": body
-            }
+            if entity:
+                body = entity.get("body", entity)
+                return {
+                    "status": "ON_RECORD",
+                    "name": clean_name,
+                    "person": body
+                }
         except (NotFoundError, Exception):
-            return {
-                "status": "NOT_ON_RECORD",
-                "name": name,
-                "message": f"Person '{name}' is not filed on record in tenant_scout."
-            }
+            pass
+
+        # 2. Check filed records for matching handle or bound address
+        try:
+            events = self.scout_client.read_events(limit=1000)
+            for ev in events:
+                extra = ev.get("extra") or {}
+                p_name = extra.get("person")
+                if p_name:
+                    try:
+                        p_entity = self.scout_client.get_entity("person", p_name)
+                        p_body = p_entity.get("body", p_entity) if p_entity else {}
+                        handle = (p_body.get("handle") or "").strip()
+                        bound = (p_body.get("bound") or "").strip()
+                        if name.lower() in (p_name.lower(), handle.lower(), bound.lower()):
+                            return {
+                                "status": "ON_RECORD",
+                                "name": p_name,
+                                "person": p_body
+                            }
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        return {
+            "status": "NOT_ON_RECORD",
+            "name": name,
+            "message": f"Person '{name}' is not filed on record in tenant_scout."
+        }
 
     def get_task_details(self, task_id: str) -> Dict[str, Any]:
         """
