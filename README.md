@@ -1,13 +1,17 @@
+<div align="center">
+
 # OnRecord
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Network-Base%20Mainnet%20(8453)-0052FF?style=for-the-badge&logo=coinbase&logoColor=white" alt="Base Mainnet" />
-  <img src="https://img.shields.io/badge/Storage-Sibyl%20Memory%20Client-8A2BE2?style=for-the-badge" alt="Sibyl Memory" />
-  <img src="https://img.shields.io/badge/Architecture-Two%20Role%20Desk-C4A35A?style=for-the-badge" alt="Architecture" />
-  <img src="https://img.shields.io/badge/License-MIT-C81E1E?style=for-the-badge" alt="License" />
-</p>
+**Scout files. Clerk only acts on what is on record.**
 
-### Scout files. Clerk only acts on what is on record.
+<br/>
+
+<img src="https://img.shields.io/badge/Network-Base%20Mainnet%20(8453)-0052FF?style=for-the-badge&logo=coinbase&logoColor=white" alt="Base Mainnet" />
+<img src="https://img.shields.io/badge/Storage-Sibyl%20Memory%20Client-8A2BE2?style=for-the-badge" alt="Sibyl Memory" />
+<img src="https://img.shields.io/badge/Architecture-Two%20Role%20Desk-C4A35A?style=for-the-badge" alt="Architecture" />
+<img src="https://img.shields.io/badge/License-MIT-C81E1E?style=for-the-badge" alt="License" />
+
+</div>
 
 OnRecord is an audit-proof operational desk for incoming work. Autonomous agent systems frequently collapse when downstream execution relies on unverified conversation memory rather than durable state. When an agent acts on assumptions that were never filed into memory, records drift, tasks duplicate, and actions execute without accountability. OnRecord solves this by separating observation from execution across isolated memory partitions: Scout monitors incoming channels and files work into storage, Clerk verifies records and inspects pending tasks, and the human operator retains exclusive confirmation authority over irreversible onchain settlement on Base.
 
