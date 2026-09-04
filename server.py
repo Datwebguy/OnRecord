@@ -168,6 +168,7 @@ class PingTaskRequest(BaseModel):
     confirm: bool = False
     rpc_url: Optional[str] = None
     private_key: Optional[str] = None
+    tx_hash: Optional[str] = None
 
 @app.post("/api/clerk/ping")
 def ping_task(req: PingTaskRequest):
@@ -176,7 +177,8 @@ def ping_task(req: PingTaskRequest):
         task_id=req.task_id,
         confirm=req.confirm,
         rpc_url=req.rpc_url,
-        private_key=req.private_key
+        private_key=req.private_key,
+        tx_hash=req.tx_hash
     )
     return result
 

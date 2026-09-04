@@ -383,7 +383,7 @@ async function loadTaskDetails(taskId) {
         <!-- Base Ping Section -->
         <div class="base-deck">
           <div class="base-head">
-            <span>ONCHAIN PING</span>
+            <span>ONCHAIN PING (BASE MAINNET)</span>
             <span>${hasBound ? 'WALLET BOUND' : 'NO WALLET'}</span>
           </div>
           ${!hasBound ? '<div style="font-size: 11px; font-family: var(--font-mono); color: var(--brass-accent);">Needs a wallet on this person</div>' : ''}
@@ -392,9 +392,14 @@ async function loadTaskDetails(taskId) {
               <input type="checkbox" id="confirm-ping-checkbox" ${!hasBound ? 'disabled' : ''} />
               Confirm onchain ping
             </label>
-            <button type="button" class="btn-primary" id="btn-execute-ping" ${!hasBound ? 'disabled' : ''} onclick="pingTaskAction('${taskId}')">
-              Ping
-            </button>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+              <button type="button" class="btn-wallet-ping" id="btn-wallet-ping" ${!hasBound ? 'disabled' : ''} onclick="pingWithBrowserWallet('${taskId}', '${bound}')">
+                Sign with Browser Wallet (MetaMask / Coinbase)
+              </button>
+              <button type="button" class="btn-secondary" id="btn-execute-ping" ${!hasBound ? 'disabled' : ''} onclick="pingTaskAction('${taskId}')">
+                Use Desk Signer (Headless)
+              </button>
+            </div>
           ` : ''}
           ${clerkStatus === 'blocked' ? `
             <div class="alert-stamp nor" style="margin-top: 4px;">
@@ -403,7 +408,7 @@ async function loadTaskDetails(taskId) {
           ` : ''}
           ${clerkStatus === 'pinged' ? `
             <div class="alert-stamp act" style="margin-top: 4px;">
-              Confirmed onchain: ${(data.clerk_info?.extra?.tx_hash || 'Broadcast successful')}
+              Confirmed onchain: ${data.clerk_info?.extra?.tx_hash ? `<a href="https://basescan.org/tx/${data.clerk_info.extra.tx_hash}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">${data.clerk_info.extra.tx_hash.slice(0, 12)}...${data.clerk_info.extra.tx_hash.slice(-8)}</a>` : 'Broadcast successful'}
             </div>
           ` : ''}
           <div id="ping-result" class="ping-result-box"></div>
@@ -487,7 +492,7 @@ async function pingTaskAction(taskId) {
     return;
   }
   
-  resultDiv.innerHTML = '<span style="color: var(--brass-accent);">Broadcasting onchain...</span>';
+  resultDiv.innerHTML = '<span style="color: var(--brass-accent);">Broadcasting onchain via desk signer...</span>';
   
   try {
     const res = await fetch("/api/clerk/ping", {
@@ -498,16 +503,115 @@ async function pingTaskAction(taskId) {
     const data = await res.json();
     
     if (data.status === "pinged") {
-      resultDiv.innerHTML = `<span style="color: var(--brass-accent); font-weight: 700;">CONFIRMED: ${data.tx_hash}</span>`;
+      const tx = data.tx_hash || "";
+      const txDisplay = tx ? `<a href="https://basescan.org/tx/${tx}" target="_blank" rel="noopener noreferrer" style="color: var(--brass-accent); text-decoration: underline;">${tx.slice(0, 10)}...${tx.slice(-6)}</a>` : "Confirmed";
+      resultDiv.innerHTML = `<span style="color: var(--brass-accent); font-weight: 700;">CONFIRMED: ${txDisplay}</span>`;
       showToast("Ping confirmed onchain.");
     } else {
-      let shortReason = "No signer key configured";
+      let shortReason = data.reason || "No signer key configured";
       if (data.reason && data.reason.includes("bound")) shortReason = "Needs a wallet on this person";
       else if (data.reason && data.reason.includes("confirm")) shortReason = "Operator confirmation required";
+      else if (data.reason && (data.reason.includes("browser wallet") || data.reason.includes("BASE_PRIVATE_KEY"))) {
+        shortReason = "Desk has no private key. Use 'Sign with Browser Wallet' above.";
+      }
       resultDiv.innerHTML = `<span style="color: var(--signal-red);">Couldn't send: ${shortReason}</span>`;
     }
     await refreshAll();
   } catch (err) {
     resultDiv.innerHTML = `<span style="color: var(--signal-red);">Couldn't send: Network error</span>`;
+  }
+}
+
+async function pingWithBrowserWallet(taskId, boundAddress) {
+  const checkbox = document.getElementById("confirm-ping-checkbox");
+  const confirmed = checkbox ? checkbox.checked : false;
+  const resultDiv = document.getElementById("ping-result");
+  
+  if (!confirmed) {
+    alert("Please check the confirmation box.");
+    return;
+  }
+
+  if (typeof window.ethereum === "undefined") {
+    resultDiv.innerHTML = '<span style="color: var(--signal-red);">No browser wallet detected. Install MetaMask or Coinbase Wallet.</span>';
+    return;
+  }
+
+  resultDiv.innerHTML = '<span style="color: var(--brass-accent);">Connecting wallet...</span>';
+  
+  try {
+    // 1. Request account connection
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    if (!accounts || accounts.length === 0) {
+      resultDiv.innerHTML = '<span style="color: var(--signal-red);">No wallet account selected.</span>';
+      return;
+    }
+    const userAccount = accounts[0];
+
+    // 2. Ensure Base Mainnet (Chain ID 8453 = 0x2105)
+    resultDiv.innerHTML = '<span style="color: var(--brass-accent);">Switching network to Base Mainnet...</span>';
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x2105" }]
+      });
+    } catch (switchErr) {
+      if (switchErr.code === 4902) {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: "0x2105",
+            chainName: "Base",
+            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+            rpcUrls: ["https://mainnet.base.org"],
+            blockExplorerUrls: ["https://basescan.org"]
+          }]
+        });
+      } else {
+        throw switchErr;
+      }
+    }
+
+    // 3. Send 0-ETH ping transaction to bound address with calldata
+    resultDiv.innerHTML = '<span style="color: var(--brass-accent);">Awaiting signature in wallet...</span>';
+    
+    const messageStr = `OnRecord task=${taskId}`;
+    let hexData = "0x";
+    for (let i = 0; i < messageStr.length; i++) {
+      hexData += messageStr.charCodeAt(i).toString(16).padStart(2, "0");
+    }
+
+    const txHash = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from: userAccount,
+        to: boundAddress,
+        value: "0x0",
+        data: hexData
+      }]
+    });
+
+    resultDiv.innerHTML = `<span style="color: var(--brass-accent); font-weight: 700;">Broadcasted: <a href="https://basescan.org/tx/${txHash}" target="_blank" rel="noopener noreferrer" style="color: var(--brass-accent); text-decoration: underline;">${txHash.slice(0, 10)}...${txHash.slice(-6)}</a>. Recording to Sibyl Memory...</span>`;
+
+    // 4. Submit txHash to Clerk
+    const res = await fetch("/api/clerk/ping", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task_id: taskId, confirm: true, tx_hash: txHash })
+    });
+    const data = await res.json();
+
+    if (data.status === "pinged") {
+      resultDiv.innerHTML = `<span style="color: var(--brass-accent); font-weight: 700;">CONFIRMED ONCHAIN: <a href="https://basescan.org/tx/${txHash}" target="_blank" rel="noopener noreferrer" style="color: var(--brass-accent); text-decoration: underline;">${txHash}</a></span>`;
+      showToast("Ping confirmed onchain.");
+    } else {
+      resultDiv.innerHTML = `<span style="color: var(--signal-red);">Error logging to Clerk: ${data.reason || "Unknown"}</span>`;
+    }
+
+    await refreshAll();
+  } catch (err) {
+    console.error("Wallet ping error:", err);
+    const msg = err.message || "User cancelled or transaction failed";
+    resultDiv.innerHTML = `<span style="color: var(--signal-red);">Signing failed: ${msg.slice(0, 60)}</span>`;
   }
 }

@@ -41,7 +41,7 @@ def execute_base_ping(
     if not pk:
         return {
             "status": "blocked",
-            "reason": "BASE_PRIVATE_KEY not provided. Real transaction cannot be signed."
+            "reason": "No server signing key configured. Sign with connected browser wallet (MetaMask / Coinbase) on the desk."
         }
 
     rpc = rpc_url or DEFAULT_BASE_RPC

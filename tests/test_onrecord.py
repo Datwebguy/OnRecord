@@ -151,3 +151,41 @@ def test_delete_scout_empties_queue(tmp_path):
     fresh_clerk = ClerkEngine(db_file)
     assert fresh_clerk.get_queue() == []
     assert fresh_clerk.check_person(person_name)["status"] == "NOT_ON_RECORD"
+
+def test_browser_wallet_ping(tmp_path):
+    db_file = str(tmp_path / "onrecord_test_wallet.db")
+    init_desk(db_file)
+    desk = get_desk_client(db_file)
+
+    dummy_hex = secrets.token_hex(20)
+    source = f"wallet:0x{dummy_hex}@8453"
+    desk.set_reference("scene", {
+        "name": "Wallet Test Desk",
+        "sources": [source],
+        "updated": "2026-09-02T00:00:00Z"
+    })
+
+    scout = ScoutEngine(db_file)
+    filings = scout.run_sync()
+    assert len(filings) == 1
+    task_id = filings[0]["task_id"]
+
+    clerk = ClerkEngine(db_file)
+    
+    # 1. Headless ping without server private key should return helpful guidance to use browser wallet
+    headless_res = clerk.ping_task(task_id, confirm=True, private_key=None)
+    assert headless_res["status"] == "blocked"
+    assert "browser wallet" in headless_res["reason"].lower() or "base_private_key" in headless_res["reason"].lower()
+
+    # 2. Browser wallet ping with broadcasted tx_hash succeeds and commits to Sibyl Memory
+    mock_tx_hash = "0x" + secrets.token_hex(32)
+    wallet_res = clerk.ping_task(task_id, confirm=True, tx_hash=mock_tx_hash)
+    assert wallet_res["status"] == "pinged"
+    assert wallet_res["tx_hash"] == mock_tx_hash
+
+    # 3. Verify task details reflect the browser wallet transaction
+    details = clerk.get_task_details(task_id)
+    assert details["clerk_status"] == "pinged"
+    assert details["clerk_info"]["extra"]["tx_hash"] == mock_tx_hash
+    assert details["clerk_info"]["extra"]["signer"] == "browser_wallet"
+

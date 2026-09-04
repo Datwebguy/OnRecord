@@ -238,6 +238,19 @@ button.btn-primary:hover:not(:disabled) {
   border-color: var(--brass-accent);
 }
 
+button.btn-wallet-ping {
+  background-color: #0052FF;
+  color: #FFFFFF;
+  border: 1px solid #0052FF;
+  font-weight: 600;
+}
+
+button.btn-wallet-ping:hover:not(:disabled) {
+  background-color: #0045D8;
+  border-color: #3B82F6;
+  box-shadow: 0 0 12px rgba(0, 82, 255, 0.4);
+}
+
 button.btn-secondary {
   background-color: transparent;
   color: var(--text-bone);

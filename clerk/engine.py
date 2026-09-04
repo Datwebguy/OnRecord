@@ -282,12 +282,13 @@ class ClerkEngine:
         task_id: str,
         confirm: bool = False,
         rpc_url: Optional[str] = None,
-        private_key: Optional[str] = None
+        private_key: Optional[str] = None,
+        tx_hash: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Clerk proposes and executes one confirmed Base ping to Person.bound:
         - Verifies bound address exists
-        - Executes real Base transaction if confirmed and key present
+        - Accepts browser wallet broadcast hash, or executes server transaction if key present
         - Writes COLD pinged with real tx hash, OR writes COLD blocked with reason
         """
         details = self.get_task_details(task_id)
@@ -302,6 +303,44 @@ class ClerkEngine:
                 extra={"task_id": task_id, "error": reason}
             )
             return {"status": "blocked", "task_id": task_id, "reason": reason}
+
+        if not confirm:
+            reason = "Operator confirmation required before executing Base ping."
+            self.clerk_client.write_event(
+                acted=[f"blocked {task_id} reason=no_confirmation"],
+                extra={"task_id": task_id, "error": reason}
+            )
+            return {"status": "blocked", "task_id": task_id, "reason": reason}
+
+        # Browser wallet broadcast pathway (MetaMask / Coinbase Wallet)
+        if tx_hash and isinstance(tx_hash, str) and tx_hash.startswith("0x"):
+            self.clerk_client.write_event(
+                acted=[f"pinged {task_id} tx={tx_hash}"],
+                extra={
+                    "task_id": task_id,
+                    "tx_hash": tx_hash,
+                    "to": bound,
+                    "chain_id": 8453,
+                    "signer": "browser_wallet"
+                }
+            )
+            task_body = {
+                "id": task_id,
+                "from_ask": details.get("ask_id", ""),
+                "person": details.get("person", {}).get("name", ""),
+                "allowed": ["skip", "reply", "ping"],
+                "status": "pinged",
+                "tx_hash": tx_hash
+            }
+            self.clerk_client.set_entity("task", task_id, task_body)
+            return {
+                "status": "pinged",
+                "task_id": task_id,
+                "tx_hash": tx_hash,
+                "to": bound,
+                "chain_id": 8453,
+                "signer": "browser_wallet"
+            }
 
         result = execute_base_ping(
             to_address=bound,
