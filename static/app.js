@@ -128,6 +128,8 @@ async function handleSaveScene() {
       .replace(/^https?:\/\/github\.com\//i, "")
       .replace(/^github\.com\//i, "")
       .replace(/^repo:/i, "")
+      .replace(/\/issues\/([0-9]+)\/?$/i, "#$1")
+      .replace(/\/$/, "")
       .trim();
     if (cleanRepo) {
       sources.push(`repo:${cleanRepo}`);
