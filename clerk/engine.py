@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Dict, Any, List, Optional, Set
 from sibyl_memory_client.exceptions import NotFoundError
 from shared.db import get_scout_client, get_clerk_client, DEFAULT_DB_PATH
@@ -307,6 +308,43 @@ class ClerkEngine:
         self.clerk_client.set_entity("task", task_id, task_body)
 
         return {"status": "skipped", "task_id": task_id}
+
+    def bind_person_wallet(self, person_name: str, address: str) -> Dict[str, Any]:
+        """
+        Operator binds a verified Base wallet address to a Person entity:
+        - Validates address format
+        - Updates Person.bound in tenant_scout
+        - Writes action event in tenant_clerk
+        """
+        clean_name = sanitize_identifier(person_name)
+        address = (address or "").strip()
+        if not re.match(r"^0x[a-fA-F0-9]{40}$", address):
+            return {
+                "status": "error",
+                "message": f"Invalid Ethereum/Base address format: '{address}'. Must start with 0x followed by 40 hex characters."
+            }
+            
+        try:
+            person_ent = self.scout_client.get_entity("person", clean_name)
+            if not person_ent:
+                return {"status": "error", "message": f"Person '{clean_name}' not found on record."}
+            body = person_ent.get("body", person_ent)
+            if not isinstance(body, dict):
+                body = {}
+            body["bound"] = address
+            self.scout_client.set_entity("person", clean_name, body)
+            
+            self.clerk_client.write_event(
+                acted=[f"bound {clean_name} -> {address}"],
+                extra={"person": clean_name, "bound": address}
+            )
+            return {
+                "status": "success",
+                "person": clean_name,
+                "bound": address
+            }
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
 
     def ping_task(
         self,

@@ -184,6 +184,18 @@ def skip_task(req: TaskActionRequest):
     result = engine.skip_task(req.task_id)
     return result
 
+class BindWalletRequest(BaseModel):
+    person_name: str
+    address: str
+
+@app.post("/api/clerk/bind_wallet")
+def bind_wallet(req: BindWalletRequest):
+    engine = ClerkEngine(DEFAULT_DB_PATH)
+    result = engine.bind_person_wallet(req.person_name, req.address)
+    if result.get("status") == "error":
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    return result
+
 class PingTaskRequest(BaseModel):
     task_id: str
     confirm: bool = False

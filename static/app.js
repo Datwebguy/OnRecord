@@ -374,9 +374,26 @@ async function loadTaskDetails(taskId) {
             <span class="k">HANDLE</span>
             <span>${person.handle || 'N/A'}</span>
           </div>
-          <div class="segment-row">
-            <span class="k">WALLET</span>
-            <span>${bound ? `<span class="card-ts" style="color: var(--brass-accent);">${bound}</span>` : '<em style="color: var(--text-dim);">Needs a wallet on this person</em>'}</span>
+          <div class="segment-row" style="align-items: flex-start;">
+            <span class="k" style="margin-top: 5px;">WALLET</span>
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; margin-left: 10px;">
+              ${bound ? `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                  <span class="card-ts" style="color: var(--brass-accent); font-weight: 600; word-break: break-all;">${bound}</span>
+                  <button type="button" class="btn-change-wallet" onclick="toggleEditWallet(true)">Change</button>
+                </div>
+                <div id="edit-wallet-form" class="bind-wallet-row" style="display: none;">
+                  <input type="text" id="bind-wallet-input" placeholder="0x... new Base address" value="${bound}" autocomplete="off" />
+                  <button type="button" class="btn-bind-action" onclick="handleBindWallet('${escapeHtml(person.name)}', '${taskId}')">Save</button>
+                  <button type="button" class="btn-cancel-action" onclick="toggleEditWallet(false)">✕</button>
+                </div>
+              ` : `
+                <div class="bind-wallet-row">
+                  <input type="text" id="bind-wallet-input" placeholder="0x... paste Base address to bind" autocomplete="off" />
+                  <button type="button" class="btn-bind-action" onclick="handleBindWallet('${escapeHtml(person.name)}', '${taskId}')">Bind Wallet</button>
+                </div>
+              `}
+            </div>
           </div>
         </div>
         
@@ -425,7 +442,7 @@ async function loadTaskDetails(taskId) {
             <span>ONCHAIN PING (BASE MAINNET)</span>
             <span>${hasBound ? 'WALLET BOUND' : 'NO WALLET'}</span>
           </div>
-          ${!hasBound ? '<div style="font-size: 11px; font-family: var(--font-mono); color: var(--brass-accent);">Needs a wallet on this person</div>' : ''}
+          ${!hasBound ? '<div style="font-size: 11px; font-family: var(--font-mono); color: var(--brass-accent);">Needs a wallet on this person — paste and bind above to unlock onchain ping.</div>' : ''}
           ${clerkStatus === 'open' ? `
             <label class="confirm-label">
               <input type="checkbox" id="confirm-ping-checkbox" ${!hasBound ? 'disabled' : ''} />
@@ -654,3 +671,48 @@ async function pingWithBrowserWallet(taskId, boundAddress) {
     resultDiv.innerHTML = `<span style="color: var(--signal-red);">Signing failed: ${msg.slice(0, 60)}</span>`;
   }
 }
+
+function toggleEditWallet(show) {
+  const form = document.getElementById("edit-wallet-form");
+  if (form) {
+    form.style.display = show ? "flex" : "none";
+    if (show) {
+      const input = document.getElementById("bind-wallet-input");
+      if (input) input.focus();
+    }
+  }
+}
+
+async function handleBindWallet(personName, taskId) {
+  const input = document.getElementById("bind-wallet-input");
+  const rawAddress = (input ? input.value : "").trim();
+  
+  if (!rawAddress) {
+    alert("Please enter a Base wallet address (e.g. 0x...).");
+    return;
+  }
+  
+  if (!/^0x[a-fA-F0-9]{40}$/.test(rawAddress)) {
+    alert("Invalid address format. Address must start with 0x followed by 40 hex characters.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/clerk/bind_wallet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ person_name: personName, address: rawAddress })
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      alert(result.detail || "Failed to bind wallet.");
+      return;
+    }
+    showToast(`Wallet bound to ${personName}.`);
+    await loadTaskDetails(taskId);
+    await loadQueue();
+  } catch (err) {
+    alert("Error binding wallet: " + err.message);
+  }
+}
+

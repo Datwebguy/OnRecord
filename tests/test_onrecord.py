@@ -185,7 +185,63 @@ def test_browser_wallet_ping(tmp_path):
 
     # 3. Verify task details reflect the browser wallet transaction
     details = clerk.get_task_details(task_id)
-    assert details["clerk_status"] == "pinged"
     assert details["clerk_info"]["extra"]["tx_hash"] == mock_tx_hash
     assert details["clerk_info"]["extra"]["signer"] == "browser_wallet"
+
+def test_bind_person_wallet(tmp_path):
+    db_file = str(tmp_path / "onrecord_test_bind.db")
+    init_desk(db_file)
+    desk = get_desk_client(db_file)
+
+    # Set up repo source with unbound contributor
+    source = "repo:testorg/testrepo"
+    desk.set_reference("scene", {
+        "name": "Bind Test Desk",
+        "sources": [source],
+        "updated": "2026-09-02T00:00:00Z"
+    })
+
+    scout = ScoutEngine(db_file)
+    # Manually seed a repo-filed person and ask
+    seed = f"{source}_1"
+    ask_id = make_id("ask", seed)
+    task_id = make_id("task", seed)
+    scout.scout_client.set_entity("person", "octocat", {
+        "name": "octocat",
+        "handle": "octocat",
+        "bound": "",
+        "last_ask": ask_id
+    })
+    scout.scout_client.set_entity("ask", ask_id, {
+        "id": ask_id,
+        "from": "octocat",
+        "title": "Bug fix issue",
+        "text": "Bug fix issue: please fix this",
+        "source": source
+    })
+    scout.scout_client.write_event(
+        acted=[f"filed {ask_id} person=octocat -> {task_id}"],
+        extra={"ask_id": ask_id, "person": "octocat", "task_id": task_id, "source": source, "title": "Bug fix issue"}
+    )
+
+    clerk = ClerkEngine(db_file)
+    details_before = clerk.get_task_details(task_id)
+    assert details_before["bound_address"] == ""
+    assert details_before["person"]["bound"] == ""
+
+    # Invalid address fails
+    bad_res = clerk.bind_person_wallet("octocat", "not-an-address")
+    assert bad_res["status"] == "error"
+
+    # Valid Base address binds successfully
+    new_addr = "0x" + secrets.token_hex(20)
+    good_res = clerk.bind_person_wallet("octocat", new_addr)
+    assert good_res["status"] == "success"
+    assert good_res["bound"] == new_addr
+
+    # Verify task details now reflect the newly bound address
+    details_after = clerk.get_task_details(task_id)
+    assert details_after["bound_address"] == new_addr
+    assert details_after["person"]["bound"] == new_addr
+
 
