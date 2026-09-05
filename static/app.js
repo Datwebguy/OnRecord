@@ -48,6 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-run-scout").addEventListener("click", handleRunScout);
   document.getElementById("btn-clear-scene")?.addEventListener("click", handleClearScene);
   document.getElementById("btn-delete-test")?.addEventListener("click", handleDeleteTest);
+  document.getElementById("btn-restore-memory")?.addEventListener("click", handleRestoreMemory);
   document.getElementById("btn-verify-person").addEventListener("click", handleVerifyPerson);
   document.getElementById("verify-person-input").addEventListener("keypress", (e) => {
     if (e.key === "Enter") handleVerifyPerson();
@@ -219,7 +220,7 @@ async function handleDeleteTest() {
     
     const container = document.getElementById("active-task-container");
     if (container) {
-      container.innerHTML = '<div class="col-empty">The Delete Test executed. Scout memory wiped. Queue is 0.<br/><br/>Click <strong>Run Scout</strong> to rebuild memory from source.</div>';
+      container.innerHTML = '<div class="col-empty">The Delete Test executed. Scout memory wiped. Queue is 0.<br/><br/>Click <strong>Restore Memory</strong> to recover snapshot, or <strong>Run Scout</strong> to rebuild from source.</div>';
     }
   } catch (err) {
     alert("Delete Test failed: " + err.message);
@@ -227,6 +228,36 @@ async function handleDeleteTest() {
     if (btn) {
       btn.disabled = false;
       btn.textContent = "Delete Test";
+    }
+  }
+}
+
+async function handleRestoreMemory() {
+  const btn = document.getElementById("btn-restore-memory");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "RESTORING...";
+  }
+  try {
+    const repoInput = document.getElementById("scene-repo");
+    if (repoInput && !repoInput.value.trim() && cachedSceneSources.length === 0) {
+      repoInput.value = "Sibyl-Labs/Sibyl-Memory";
+      await handleSaveScene();
+    }
+    const res = await fetch("/api/desk/restore_memory", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.detail || "Failed to restore memory.");
+      return;
+    }
+    showToast(data.message || "Memory restored successfully.");
+    await refreshAll();
+  } catch (err) {
+    alert("Restore failed: " + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Restore Memory";
     }
   }
 }
@@ -259,7 +290,7 @@ async function loadScoutJournal() {
     if (countEl) countEl.textContent = events.length;
 
     if (events.length === 0) {
-      container.innerHTML = '<div class="col-empty">No filings on record.</div>';
+      container.innerHTML = '<div class="col-empty">No filings on record.<br/><br/><button type="button" class="btn-restore" style="padding:5px 12px;font-size:10px;cursor:pointer;" onclick="handleRestoreMemory()">Restore Memory</button></div>';
       return;
     }
     

@@ -10,7 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from shared.db import (
-    get_scout_client, get_clerk_client, get_desk_client, init_desk, wipe_tenant_data, DEFAULT_DB_PATH
+    get_scout_client, get_clerk_client, get_desk_client, init_desk,
+    wipe_tenant_data, backup_tenant_data, restore_tenant_data, DEFAULT_DB_PATH
 )
 from shared.models import SceneModel, validate_source_string, utc_now_iso
 from scout.engine import ScoutEngine
@@ -119,11 +120,17 @@ def get_charter():
 def run_delete_test(full: bool = Query(False, description="Wipe both scout and clerk partitions")):
     """
     Executes The Delete Test:
-    Wipes tenant_scout memory partition to verify that:
-    1. Queue immediately drops to 0.
-    2. Any entity query returns NOT ON RECORD.
-    3. Memory is strictly load-bearing.
+    1. Backs up tenant_scout so it can be restored on demand.
+    2. Wipes tenant_scout memory partition to verify that:
+       - Queue immediately drops to 0.
+       - Any entity query returns NOT ON RECORD.
+       - Memory is strictly load-bearing.
     """
+    # Snapshot backup first
+    backup_tenant_data("tenant_scout", DEFAULT_DB_PATH)
+    if full:
+        backup_tenant_data("tenant_clerk", DEFAULT_DB_PATH)
+
     deleted_scout = wipe_tenant_data("tenant_scout", DEFAULT_DB_PATH)
     deleted_clerk = 0
     if full:
@@ -133,6 +140,23 @@ def run_delete_test(full: bool = Query(False, description="Wipe both scout and c
         "deleted_scout": deleted_scout,
         "deleted_clerk": deleted_clerk,
         "message": f"Scout memory wiped ({deleted_scout} rows deleted). Queue is now 0."
+    }
+
+@app.post("/api/desk/restore_memory")
+def restore_memory():
+    """
+    Restores memory after a Delete Test:
+    1. Restores the exact snapshot from backup (including bound wallets).
+    2. Runs Scout sync to ensure all configured Scene sources are filed.
+    """
+    restored_snapshot = restore_tenant_data("tenant_scout", DEFAULT_DB_PATH)
+    engine = ScoutEngine(DEFAULT_DB_PATH)
+    filings = engine.run_sync()
+    return {
+        "status": "completed",
+        "restored_snapshot_rows": restored_snapshot,
+        "new_filings": len(filings),
+        "message": f"Memory restored ({restored_snapshot} snapshot rows recovered, {len(filings)} new filings)."
     }
 
 # ==========================================

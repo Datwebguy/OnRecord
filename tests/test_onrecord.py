@@ -10,7 +10,7 @@ from shared.models import (
 )
 from shared.db import (
     get_scout_client, get_clerk_client, get_desk_client, init_desk,
-    wipe_tenant_data
+    wipe_tenant_data, backup_tenant_data, restore_tenant_data
 )
 from scout.engine import ScoutEngine
 from clerk.engine import ClerkEngine
@@ -243,5 +243,53 @@ def test_bind_person_wallet(tmp_path):
     details_after = clerk.get_task_details(task_id)
     assert details_after["bound_address"] == new_addr
     assert details_after["person"]["bound"] == new_addr
+
+def test_backup_and_restore_tenant_data(tmp_path):
+    db_file = str(tmp_path / "onrecord_test_restore.db")
+    init_desk(db_file)
+    desk = get_desk_client(db_file)
+
+    dummy_hex = secrets.token_hex(20)
+    source = f"wallet:0x{dummy_hex}@8453"
+    desk.set_reference("scene", {
+        "name": "Restore Test Desk",
+        "sources": [source],
+        "updated": "2026-09-02T00:00:00Z"
+    })
+
+    scout = ScoutEngine(db_file)
+    filings = scout.run_sync()
+    assert len(filings) == 1
+    person_name = filings[0]["person"]
+    task_id = filings[0]["task_id"]
+
+    clerk = ClerkEngine(db_file)
+    assert len(clerk.get_queue()) == 1
+    assert clerk.check_person(person_name)["status"] == "ON_RECORD"
+
+    # 1. Take backup snapshot
+    backed_up = backup_tenant_data("tenant_scout", db_file)
+    assert backed_up > 0
+
+    # 2. Wipe Scout tenant data (Delete Test)
+    deleted_rows = wipe_tenant_data("tenant_scout", db_file)
+    assert deleted_rows > 0
+
+    # Verify queue is now 0 and person is NOT ON RECORD
+    fresh_clerk = ClerkEngine(db_file)
+    assert fresh_clerk.get_queue() == []
+    assert fresh_clerk.check_person(person_name)["status"] == "NOT_ON_RECORD"
+
+    # 3. Restore tenant data from backup snapshot
+    restored_rows = restore_tenant_data("tenant_scout", db_file)
+    assert restored_rows > 0
+
+    # Verify memory is recovered
+    restored_clerk = ClerkEngine(db_file)
+    queue = restored_clerk.get_queue()
+    assert len(queue) == 1
+    assert queue[0]["task_id"] == task_id
+    assert restored_clerk.check_person(person_name)["status"] == "ON_RECORD"
+
 
 

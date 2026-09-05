@@ -51,6 +51,7 @@ def init_desk(db_path: str = DEFAULT_DB_PATH) -> None:
 def wipe_tenant_data(tenant_id: str, db_path: str = DEFAULT_DB_PATH) -> int:
     """
     Wipes all rows belonging to a specific tenant in the SQLite database.
+    Preserves backup snapshots (tables starting with backup_).
     Used for the Delete Test to verify isolated failure modes.
     """
     p = Path(db_path)
@@ -60,8 +61,8 @@ def wipe_tenant_data(tenant_id: str, db_path: str = DEFAULT_DB_PATH) -> int:
     conn = sqlite3.connect(str(p))
     cursor = conn.cursor()
     
-    # Find tables that have tenant_id column
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    # Find tables that do NOT start with backup_
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'backup_%';")
     tables = [row[0] for row in cursor.fetchall()]
     
     deleted_count = 0
@@ -75,3 +76,57 @@ def wipe_tenant_data(tenant_id: str, db_path: str = DEFAULT_DB_PATH) -> int:
     conn.commit()
     conn.close()
     return deleted_count
+
+def backup_tenant_data(tenant_id: str, db_path: str = DEFAULT_DB_PATH) -> int:
+    """
+    Creates a snapshot backup of tenant data before a Delete Test wipe.
+    Only backs up tables that contain a tenant_id column and are not internal shadow/backup tables.
+    """
+    p = Path(db_path)
+    if not p.exists():
+        return 0
+    conn = sqlite3.connect(str(p))
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'backup_%' AND name NOT LIKE '%_fts%';")
+    tables = [row[0] for row in cursor.fetchall()]
+    backed_up = 0
+    for table in tables:
+        try:
+            cursor.execute(f"PRAGMA table_info({table});")
+            columns = [col[1] for col in cursor.fetchall()]
+            if "tenant_id" not in columns:
+                continue
+            backup_table = f"backup_{table}"
+            cursor.execute(f"CREATE TABLE IF NOT EXISTS {backup_table} AS SELECT * FROM {table} WHERE 0;")
+            cursor.execute(f"DELETE FROM {backup_table} WHERE tenant_id = ?", (tenant_id,))
+            cursor.execute(f"INSERT INTO {backup_table} SELECT * FROM {table} WHERE tenant_id = ?", (tenant_id,))
+            backed_up += cursor.rowcount
+        except Exception:
+            pass
+    conn.commit()
+    conn.close()
+    return backed_up
+
+def restore_tenant_data(tenant_id: str, db_path: str = DEFAULT_DB_PATH) -> int:
+    """
+    Restores tenant data from the backup snapshot.
+    """
+    p = Path(db_path)
+    if not p.exists():
+        return 0
+    conn = sqlite3.connect(str(p))
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'backup_%' AND name NOT LIKE '%_fts%';")
+    backup_tables = [row[0] for row in cursor.fetchall()]
+    restored = 0
+    for b_table in backup_tables:
+        orig_table = b_table.replace("backup_", "")
+        try:
+            cursor.execute(f"INSERT OR REPLACE INTO {orig_table} SELECT * FROM {b_table} WHERE tenant_id = ?", (tenant_id,))
+            restored += cursor.rowcount
+        except Exception:
+            pass
+    conn.commit()
+    conn.close()
+    return restored
+

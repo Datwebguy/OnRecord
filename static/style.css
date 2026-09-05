@@ -274,6 +274,19 @@ button.btn-danger:hover:not(:disabled) {
   border-color: var(--signal-red-hover);
 }
 
+button.btn-restore {
+  background-color: rgba(196, 163, 90, 0.15);
+  color: var(--brass-accent);
+  border: 1px solid var(--brass-dim);
+}
+
+button.btn-restore:hover:not(:disabled) {
+  background-color: var(--brass-accent);
+  color: var(--bg-ground);
+  border-color: var(--brass-accent);
+  box-shadow: 0 0 10px rgba(196, 163, 90, 0.3);
+}
+
 /* Main Desk 3-Column Stage */
 main.desk-stage {
   display: grid;
