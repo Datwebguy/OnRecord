@@ -139,6 +139,7 @@ def get_scout_journal(limit: int = 50):
 # ==========================================
 
 @app.get("/api/queue")
+@app.get("/api/clerk/queue")
 def get_queue():
     engine = ClerkEngine(DEFAULT_DB_PATH)
     queue = engine.get_queue()
