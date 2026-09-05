@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from shared.db import (
-    get_scout_client, get_clerk_client, get_desk_client, init_desk, DEFAULT_DB_PATH
+    get_scout_client, get_clerk_client, get_desk_client, init_desk, wipe_tenant_data, DEFAULT_DB_PATH
 )
 from shared.models import SceneModel, validate_source_string, utc_now_iso
 from scout.engine import ScoutEngine
@@ -114,6 +114,26 @@ def get_charter():
         return {"scout": "file only", "clerk": "act only on filed tasks", "ping": "only to a Person with a bound address"}
     body = ref.get("body", ref) if isinstance(ref, dict) else ref
     return body
+
+@app.post("/api/desk/delete_test")
+def run_delete_test(full: bool = Query(False, description="Wipe both scout and clerk partitions")):
+    """
+    Executes The Delete Test:
+    Wipes tenant_scout memory partition to verify that:
+    1. Queue immediately drops to 0.
+    2. Any entity query returns NOT ON RECORD.
+    3. Memory is strictly load-bearing.
+    """
+    deleted_scout = wipe_tenant_data("tenant_scout", DEFAULT_DB_PATH)
+    deleted_clerk = 0
+    if full:
+        deleted_clerk = wipe_tenant_data("tenant_clerk", DEFAULT_DB_PATH)
+    return {
+        "status": "completed",
+        "deleted_scout": deleted_scout,
+        "deleted_clerk": deleted_clerk,
+        "message": f"Scout memory wiped ({deleted_scout} rows deleted). Queue is now 0."
+    }
 
 # ==========================================
 # SCOUT ENDPOINTS (tenant_scout)

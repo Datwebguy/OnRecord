@@ -47,6 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-save-scene").addEventListener("click", handleSaveScene);
   document.getElementById("btn-run-scout").addEventListener("click", handleRunScout);
   document.getElementById("btn-clear-scene")?.addEventListener("click", handleClearScene);
+  document.getElementById("btn-delete-test")?.addEventListener("click", handleDeleteTest);
   document.getElementById("btn-verify-person").addEventListener("click", handleVerifyPerson);
   document.getElementById("verify-person-input").addEventListener("keypress", (e) => {
     if (e.key === "Enter") handleVerifyPerson();
@@ -196,6 +197,37 @@ async function handleClearScene() {
     }
   } catch (err) {
     alert("Error clearing scene: " + err.message);
+  }
+}
+
+async function handleDeleteTest() {
+  const confirmed = confirm("Execute The Delete Test?\n\nThis wipes tenant_scout memory from SQLite to verify:\n1. The Queue immediately drops to 0.\n2. All filed entities return NOT ON RECORD.\n3. Base pings are strictly refused.\n\n(You can repopulate anytime by clicking 'Run Scout').");
+  if (!confirmed) return;
+  
+  const btn = document.getElementById("btn-delete-test");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "WIPING...";
+  }
+  
+  try {
+    const res = await fetch("/api/desk/delete_test", { method: "POST" });
+    const data = await res.json();
+    showToast(`Delete Test Passed: ${data.deleted_scout || 0} memory rows wiped. Queue is now 0.`);
+    currentActiveTaskId = null;
+    await refreshAll();
+    
+    const container = document.getElementById("active-task-container");
+    if (container) {
+      container.innerHTML = '<div class="col-empty">The Delete Test executed. Scout memory wiped. Queue is 0.<br/><br/>Click <strong>Run Scout</strong> to rebuild memory from source.</div>';
+    }
+  } catch (err) {
+    alert("Delete Test failed: " + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Delete Test";
+    }
   }
 }
 

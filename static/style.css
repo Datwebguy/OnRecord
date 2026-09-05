@@ -262,6 +262,18 @@ button.btn-secondary:hover:not(:disabled) {
   color: var(--brass-accent);
 }
 
+button.btn-danger {
+  background-color: rgba(200, 30, 30, 0.15);
+  color: #FFAAAA;
+  border: 1px solid var(--signal-red);
+}
+
+button.btn-danger:hover:not(:disabled) {
+  background-color: var(--signal-red);
+  color: #FFFFFF;
+  border-color: var(--signal-red-hover);
+}
+
 /* Main Desk 3-Column Stage */
 main.desk-stage {
   display: grid;
