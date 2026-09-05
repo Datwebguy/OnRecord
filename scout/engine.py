@@ -138,6 +138,7 @@ class ScoutEngine:
                     ask_body = {
                         "id": ask_id,
                         "from": person_name,
+                        "title": title,
                         "text": ask_text,
                         "source": src,
                         "filed_at": utc_now_iso()
@@ -154,7 +155,8 @@ class ScoutEngine:
                             "ask_id": ask_id,
                             "person": person_name,
                             "task_id": task_id,
-                            "source": src
+                            "source": src,
+                            "title": title
                         }
                     )
                     filed_keys.add(ask_id)

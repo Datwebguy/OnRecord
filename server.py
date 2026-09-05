@@ -14,7 +14,7 @@ from shared.db import (
 )
 from shared.models import SceneModel, validate_source_string, utc_now_iso
 from scout.engine import ScoutEngine
-from clerk.engine import ClerkEngine
+from clerk.engine import ClerkEngine, extract_issue_title
 
 app = FastAPI(title="OnRecord Desk", version="1.0.0")
 
@@ -130,6 +130,18 @@ def get_scout_journal(limit: int = 50):
     scout = get_scout_client(DEFAULT_DB_PATH)
     try:
         events = scout.read_events(limit=limit)
+        for ev in events:
+            extra = ev.get("extra")
+            if isinstance(extra, dict) and not extra.get("title"):
+                ask_id = extra.get("ask_id")
+                if ask_id:
+                    try:
+                        ask_ent = scout.get_entity("ask", ask_id)
+                        if ask_ent:
+                            b = ask_ent.get("body", ask_ent)
+                            extra["title"] = extract_issue_title(b)
+                    except Exception:
+                        pass
         return {"events": events}
     except Exception as e:
         return {"events": [], "error": str(e)}

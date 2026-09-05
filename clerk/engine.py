@@ -5,6 +5,29 @@ from shared.db import get_scout_client, get_clerk_client, DEFAULT_DB_PATH
 from shared.models import TaskModel, sanitize_identifier
 from shared.base_client import execute_base_ping
 
+def extract_issue_title(body_dict: Any) -> str:
+    if not isinstance(body_dict, dict):
+        return ""
+    if body_dict.get("title"):
+        return body_dict["title"]
+    text = body_dict.get("text") or ""
+    if not text:
+        return ""
+    if ": #" in text:
+        return text.split(": #", 1)[0].strip()
+    if ": \n" in text:
+        return text.split(": \n", 1)[0].strip()
+    if ":\n" in text:
+        return text.split(":\n", 1)[0].strip()
+    parts = text.split(": ")
+    if len(parts) >= 2:
+        for i in range(len(parts) - 1, 0, -1):
+            cand = ": ".join(parts[:i]).strip()
+            rest = ": ".join(parts[i:]).strip()
+            if "\n" in rest or "\r" in rest or rest.startswith("Hello") or rest.startswith("Hi"):
+                return cand
+    return text.split("\n")[0].strip()
+
 class ClerkEngine:
     def __init__(self, db_path: str = DEFAULT_DB_PATH):
         self.db_path = db_path
@@ -36,7 +59,6 @@ class ClerkEngine:
                     task_id = base_task_id or (parts[1] if len(parts) > 1 else None)
                     
                     if task_id and verb in ("opened", "skipped", "pinged", "blocked"):
-                        # read_events is sorted by ts DESC (newest first). Keep the newest action.
                         if task_id not in actions:
                             actions[task_id] = {
                                 "status": verb,
@@ -51,22 +73,21 @@ class ClerkEngine:
 
     def get_queue(self) -> List[Dict[str, Any]]:
         """
-        Computes the pending Queue dynamically:
-        Tasks filed on tenant_scout with no corresponding action (opened/skipped/pinged/blocked) on tenant_clerk.
-        No second database table or memory cache is used.
+        Reads tenant_scout journal for 'filed' events.
+        Excludes tasks that already have a Clerk action recorded in tenant_clerk.
+        Returns active queue.
         """
         clerk_actions = self.get_clerk_action_history()
         queue = []
         seen_tasks: Set[str] = set()
         
         try:
-            scout_events = self.scout_client.read_events(limit=1000)
-            for ev in scout_events:
+            events = self.scout_client.read_events(limit=500)
+            for ev in events:
                 acted = ev.get("acted") or []
                 extra = ev.get("extra") or {}
-                
                 for act in acted:
-                    if isinstance(act, str) and act.startswith("filed "):
+                    if act.startswith("filed "):
                         task_id = extra.get("task_id")
                         ask_id = extra.get("ask_id")
                         person_name = extra.get("person")
@@ -80,11 +101,21 @@ class ClerkEngine:
 
                         if task_id and task_id not in clerk_actions and task_id not in seen_tasks:
                             seen_tasks.add(task_id)
+                            item_title = extra.get("title") or ""
+                            if not item_title and ask_id:
+                                try:
+                                    ask_ent = self.scout_client.get_entity("ask", ask_id)
+                                    if ask_ent:
+                                        b = ask_ent.get("body", ask_ent)
+                                        item_title = extract_issue_title(b)
+                                except Exception:
+                                    pass
                             queue.append({
                                 "task_id": task_id,
                                 "ask_id": ask_id,
                                 "person": person_name,
                                 "source": source,
+                                "title": item_title,
                                 "filed_at": ev.get("ts")
                             })
         except Exception:

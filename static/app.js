@@ -16,6 +16,16 @@ function formatCodeWithLineNumbers(obj) {
   }).join("\n");
 }
 
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function switchMemoryFileTab(tabName) {
   activeMemoryFileTab = tabName;
   const personBtn = document.getElementById("tab-btn-person");
@@ -227,14 +237,16 @@ async function loadScoutJournal() {
       const personName = extra.person || "Contributor";
       const sourceDisplay = (extra.source || "scene").replace(/^repo:/, "").replace(/@8453$/, "");
       const timeStr = ev.ts ? new Date(ev.ts).toLocaleTimeString() : "";
+      const title = extra.title || "";
       
       html += `
         <div class="desk-card">
           <div class="card-row">
-            <span class="card-label">${personName}</span>
+            <span class="card-label">${escapeHtml(personName)}</span>
             <span class="card-ts">${timeStr}</span>
           </div>
-          <div class="card-subtext">Filed from ${sourceDisplay}</div>
+          ${title ? `<div class="card-title-line" title="${escapeHtml(title)}">${escapeHtml(title)}</div>` : ''}
+          <div class="card-subtext">Filed from ${escapeHtml(sourceDisplay)}</div>
         </div>
       `;
     });
@@ -264,14 +276,16 @@ async function loadQueue() {
     queue.forEach(item => {
       const isSelected = item.task_id === currentActiveTaskId;
       const sourceDisplay = (item.source || "").replace(/^repo:/, "").replace(/@8453$/, "");
+      const title = item.title || "";
       
       html += `
         <div class="desk-card clickable ${isSelected ? 'selected' : ''}" onclick="selectTask('${item.task_id}')">
           <div class="card-row">
-            <span class="card-label">${item.person || 'Person'}</span>
+            <span class="card-label">${escapeHtml(item.person || 'Person')}</span>
             <span class="metal-tab tab-act">ON RECORD</span>
           </div>
-          <div class="card-subtext">${sourceDisplay}</div>
+          ${title ? `<div class="card-title-line" title="${escapeHtml(title)}">${escapeHtml(title)}</div>` : ''}
+          <div class="card-subtext">${escapeHtml(sourceDisplay)}</div>
         </div>
       `;
     });
