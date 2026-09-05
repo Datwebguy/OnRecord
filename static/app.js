@@ -239,11 +239,6 @@ async function handleRestoreMemory() {
     btn.textContent = "RESTORING...";
   }
   try {
-    const repoInput = document.getElementById("scene-repo");
-    if (repoInput && !repoInput.value.trim() && cachedSceneSources.length === 0) {
-      repoInput.value = "Sibyl-Labs/Sibyl-Memory";
-      await handleSaveScene();
-    }
     const res = await fetch("/api/desk/restore_memory", { method: "POST" });
     const data = await res.json();
     if (!res.ok) {
