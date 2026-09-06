@@ -12,3 +12,8 @@ product.md
 resources.md
 handover.md
 memory.md
+video/
+.agents/
+skills-lock.json
+*.mp4
+*.webm

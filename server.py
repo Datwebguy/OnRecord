@@ -67,6 +67,11 @@ class SaveSceneRequest(BaseModel):
     name: str = ""
     sources: List[str] = Field(default_factory=list)
 
+@app.get("/api/status")
+@app.get("/healthz")
+def get_status():
+    return {"status": "ok", "app": "OnRecord Desk", "version": "1.0.0"}
+
 @app.get("/api/scene")
 def get_scene():
     import json

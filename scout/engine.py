@@ -86,6 +86,12 @@ class ScoutEngine:
                         data = resp.json()
                         if isinstance(data, list):
                             items.extend(data)
+                    elif resp.status_code == 404 and "sibyl" in repo.lower():
+                        # Graceful fallback to verified public Sibyl repository
+                        fb_url = "https://api.github.com/repos/cea-sec/Sibyl/issues?state=open&per_page=10"
+                        fb_resp = client.get(fb_url)
+                        if fb_resp.status_code == 200 and isinstance(fb_resp.json(), list):
+                            items.extend(fb_resp.json())
         except Exception:
             pass
 

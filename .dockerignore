@@ -1,0 +1,12 @@
+video/
+.git/
+.agents/
+skills-lock.json
+__pycache__/
+*.pyc
+.pytest_cache/
+scratch/
+data/*.db
+data/*.db-*
+.env.local
+node_modules/
