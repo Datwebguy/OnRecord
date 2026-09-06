@@ -57,6 +57,13 @@ def main():
         sys.exit(0)
 
     first_task = queue[0]
+    for t in queue:
+        td = clerk_engine.get_task_details(t["task_id"])
+        ba = (td.get("person", {}).get("bound") or "").strip()
+        if ba and ba.startswith("0x"):
+            first_task = t
+            break
+
     task_id = first_task["task_id"]
     person_name = first_task.get("person", "Unknown")
 
