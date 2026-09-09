@@ -5,6 +5,18 @@ let activeMemoryFileTab = "person";
 let activeTaskPersonData = null;
 let activeTaskAskData = null;
 
+function adminHeaders(json = false) {
+  let token = sessionStorage.getItem("onrecord_admin_token") || "";
+  if (!token && !window.onrecordJudgeMode) {
+    token = window.prompt("Enter the OnRecord operator token:");
+    if (token) sessionStorage.setItem("onrecord_admin_token", token.trim());
+  }
+  const headers = {};
+  if (json) headers["Content-Type"] = "application/json";
+  if (token) headers.Authorization = ["Bearer", token].join(" ");
+  return headers;
+}
+
 function formatCodeWithLineNumbers(obj) {
   if (!obj) return "";
   const jsonStr = JSON.stringify(obj, null, 2);
@@ -56,6 +68,13 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function initApp() {
+  try {
+    const statusRes = await fetch("/api/status");
+    const status = await statusRes.json();
+    window.onrecordJudgeMode = Boolean(status.judge_mode);
+  } catch (_) {
+    window.onrecordJudgeMode = false;
+  }
   await loadScene();
   await refreshAll();
 }
@@ -163,7 +182,7 @@ async function handleSaveScene() {
   try {
     const res = await fetch("/api/scene", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: adminHeaders(true),
       body: JSON.stringify({ name: "OnRecord Desk", sources })
     });
     const result = await res.json();
@@ -188,7 +207,7 @@ async function handleClearScene() {
   try {
     const res = await fetch("/api/scene", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: adminHeaders(true),
       body: JSON.stringify({ name: "OnRecord Desk", sources: [] })
     });
     if (res.ok) {
@@ -212,7 +231,7 @@ async function handleDeleteTest() {
   }
   
   try {
-    const res = await fetch("/api/desk/delete_test", { method: "POST" });
+    const res = await fetch("/api/desk/delete_test", { method: "POST", headers: adminHeaders() });
     const data = await res.json();
     showToast(`Delete Test Passed: ${data.deleted_scout || 0} memory rows wiped. Queue is now 0.`);
     currentActiveTaskId = null;
@@ -239,7 +258,7 @@ async function handleRestoreMemory() {
     btn.textContent = "RESTORING...";
   }
   try {
-    const res = await fetch("/api/desk/restore_memory", { method: "POST" });
+    const res = await fetch("/api/desk/restore_memory", { method: "POST", headers: adminHeaders() });
     const data = await res.json();
     if (!res.ok) {
       alert(data.detail || "Failed to restore memory.");
@@ -262,9 +281,10 @@ async function handleRunScout() {
   btn.disabled = true;
   btn.textContent = "FILING...";
   try {
-    const res = await fetch("/api/scout/run", { method: "POST" });
+    const res = await fetch("/api/scout/run", { method: "POST", headers: adminHeaders() });
     const data = await res.json();
-    showToast(`Scout completed: ${data.count || 0} filings.`);
+    const errorNote = (data.errors || []).length ? ` ${data.errors.length} source warning${data.errors.length === 1 ? '' : 's'} — no synthetic records were created.` : '';
+    showToast(`Scout completed: ${data.count || 0} filings.${errorNote}`);
     await refreshAll();
   } catch (err) {
     alert("Scout sync failed: " + err.message);
@@ -422,7 +442,7 @@ async function loadTaskDetails(taskId) {
     container.innerHTML = `
       <div class="inspector-panel">
         <div class="inspector-head">
-          <span class="inspector-id">${person.name || 'Person File'}</span>
+          <span class="inspector-id">${escapeHtml(person.name || 'Person File')}</span>
           <span class="metal-tab ${tabClass}">${tabText}</span>
         </div>
         
@@ -430,18 +450,18 @@ async function loadTaskDetails(taskId) {
         <div class="segment-box">
           <div class="segment-row">
             <span class="k">HANDLE</span>
-            <span>${person.handle || 'N/A'}</span>
+                  <span>${escapeHtml(person.handle || 'N/A')}</span>
           </div>
           <div class="segment-row" style="align-items: flex-start;">
             <span class="k" style="margin-top: 5px;">WALLET</span>
             <div style="flex: 1; display: flex; flex-direction: column; gap: 6px; margin-left: 10px;">
               ${bound ? `
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-                  <span class="card-ts" style="color: var(--brass-accent); font-weight: 600; word-break: break-all;">${bound}</span>
+                  <span class="card-ts" style="color: var(--brass-accent); font-weight: 600; word-break: break-all;">${escapeHtml(bound)}</span>
                   <button type="button" class="btn-change-wallet" onclick="toggleEditWallet(true)">Change</button>
                 </div>
                 <div id="edit-wallet-form" class="bind-wallet-row" style="display: none;">
-                  <input type="text" id="bind-wallet-input" placeholder="0x... new Base address" value="${bound}" autocomplete="off" />
+                  <input type="text" id="bind-wallet-input" placeholder="0x... new Base address" value="${escapeHtml(bound)}" autocomplete="off" />
                   <button type="button" class="btn-bind-action" onclick="handleBindWallet('${escapeHtml(person.name)}', '${taskId}')">Save</button>
                   <button type="button" class="btn-cancel-action" onclick="toggleEditWallet(false)">✕</button>
                 </div>
@@ -458,10 +478,10 @@ async function loadTaskDetails(taskId) {
         <!-- Ask Details -->
         <div class="segment-box">
           <span class="segment-head">INCOMING ASK</span>
-          <div class="ask-text-wrap">${ask.text || 'N/A'}</div>
+          <div class="ask-text-wrap">${escapeHtml(ask.text || 'N/A')}</div>
           <div class="segment-row" style="margin-top: 4px;">
             <span class="k">SOURCE</span>
-            <span>${sourceDisplay || 'N/A'}</span>
+            <span>${escapeHtml(sourceDisplay || 'N/A')}</span>
           </div>
         </div>
         
@@ -517,7 +537,7 @@ async function loadTaskDetails(taskId) {
           ` : ''}
           ${clerkStatus === 'blocked' ? `
             <div class="alert-stamp nor" style="margin-top: 4px;">
-              Couldn't send: ${blockedReason}
+              Couldn't send: ${escapeHtml(blockedReason)}
             </div>
           ` : ''}
           ${clerkStatus === 'pinged' ? `
@@ -550,7 +570,7 @@ async function handleVerifyPerson() {
       resContainer.innerHTML = `
         <div class="alert-stamp act" style="margin-bottom: 6px;">
           <strong>ON RECORD</strong><br/>
-          ${p.name} ${p.handle ? `(${p.handle})` : ''}
+          ${escapeHtml(p.name || name)} ${p.handle ? `(${escapeHtml(p.handle)})` : ''}
         </div>
       `;
     } else {
@@ -570,7 +590,7 @@ async function openTaskAction(taskId) {
   try {
     const res = await fetch("/api/clerk/open", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: adminHeaders(true),
       body: JSON.stringify({ task_id: taskId })
     });
     const data = await res.json();
@@ -585,7 +605,7 @@ async function skipTaskAction(taskId) {
   try {
     const res = await fetch("/api/clerk/skip", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: adminHeaders(true),
       body: JSON.stringify({ task_id: taskId })
     });
     const data = await res.json();
@@ -611,7 +631,7 @@ async function pingTaskAction(taskId) {
   try {
     const res = await fetch("/api/clerk/ping", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: adminHeaders(true),
       body: JSON.stringify({ task_id: taskId, confirm: confirmed })
     });
     const data = await res.json();
@@ -628,7 +648,7 @@ async function pingTaskAction(taskId) {
       else if (data.reason && (data.reason.includes("browser wallet") || data.reason.includes("BASE_PRIVATE_KEY"))) {
         shortReason = "Desk has no private key. Use 'Sign with Browser Wallet' above.";
       }
-      resultDiv.innerHTML = `<span style="color: var(--signal-red);">Couldn't send: ${shortReason}</span>`;
+      resultDiv.innerHTML = `<span style="color: var(--signal-red);">Couldn't send: ${escapeHtml(shortReason)}</span>`;
     }
     await refreshAll();
   } catch (err) {
@@ -708,9 +728,11 @@ async function pingWithBrowserWallet(taskId, boundAddress) {
     resultDiv.innerHTML = `<span style="color: var(--brass-accent); font-weight: 700;">Broadcasted: <a href="https://basescan.org/tx/${txHash}" target="_blank" rel="noopener noreferrer" style="color: var(--brass-accent); text-decoration: underline;">${txHash.slice(0, 10)}...${txHash.slice(-6)}</a>. Recording to Sibyl Memory...</span>`;
 
     // 4. Submit txHash to Clerk
+    const statusRes = await fetch("/api/status");
+    const status = await statusRes.json();
     const res = await fetch("/api/clerk/ping", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: status.judge_mode ? { "Content-Type": "application/json" } : adminHeaders(true),
       body: JSON.stringify({ task_id: taskId, confirm: true, tx_hash: txHash })
     });
     const data = await res.json();
@@ -719,14 +741,14 @@ async function pingWithBrowserWallet(taskId, boundAddress) {
       resultDiv.innerHTML = `<span style="color: var(--brass-accent); font-weight: 700;">CONFIRMED ONCHAIN: <a href="https://basescan.org/tx/${txHash}" target="_blank" rel="noopener noreferrer" style="color: var(--brass-accent); text-decoration: underline;">${txHash}</a></span>`;
       showToast("Ping confirmed onchain.");
     } else {
-      resultDiv.innerHTML = `<span style="color: var(--signal-red);">Error logging to Clerk: ${data.reason || "Unknown"}</span>`;
+      resultDiv.innerHTML = `<span style="color: var(--signal-red);">Error logging to Clerk: ${escapeHtml(data.reason || "Unknown")}</span>`;
     }
 
     await refreshAll();
   } catch (err) {
     console.error("Wallet ping error:", err);
     const msg = err.message || "User cancelled or transaction failed";
-    resultDiv.innerHTML = `<span style="color: var(--signal-red);">Signing failed: ${msg.slice(0, 60)}</span>`;
+    resultDiv.innerHTML = `<span style="color: var(--signal-red);">Signing failed: ${escapeHtml(msg.slice(0, 60))}</span>`;
   }
 }
 
@@ -758,7 +780,7 @@ async function handleBindWallet(personName, taskId) {
   try {
     const res = await fetch("/api/clerk/bind_wallet", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: adminHeaders(true),
       body: JSON.stringify({ person_name: personName, address: rawAddress })
     });
     const result = await res.json();
@@ -773,4 +795,3 @@ async function handleBindWallet(personName, taskId) {
     alert("Error binding wallet: " + err.message);
   }
 }
-

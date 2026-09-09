@@ -14,6 +14,7 @@ from shared.db import (
 )
 from scout.engine import ScoutEngine
 from clerk.engine import ClerkEngine
+import clerk.engine as clerk_engine_module
 
 def test_source_validation():
     test_hex = secrets.token_hex(20)
@@ -22,7 +23,6 @@ def test_source_validation():
     assert validate_source_string("repo:owner-name/repo.name#123")
     assert validate_source_string(f"wallet:0x{test_hex}@8453")
     assert validate_source_string(f"wallet:0x{test_hex}")
-    assert validate_source_string(f"dune:address:0x{test_hex}")
 
     # Invalid sources
     assert not validate_source_string("random_text")
@@ -42,7 +42,7 @@ def test_empty_scene(tmp_path):
     queue = clerk.get_queue()
     assert queue == []
 
-def test_scout_filing_and_clerk_recall(tmp_path):
+def test_scout_filing_and_clerk_recall(tmp_path, monkeypatch):
     db_file = str(tmp_path / "onrecord_test.db")
     init_desk(db_file)
     desk = get_desk_client(db_file)
@@ -55,6 +55,9 @@ def test_scout_filing_and_clerk_recall(tmp_path):
         "sources": [source],
         "updated": "2026-09-02T00:00:00Z"
     })
+    monkeypatch.setattr(ScoutEngine, "fetch_base_wallet_activity", lambda self, source: [
+        {"id": "test-transfer-1", "title": "Base transfer", "body": "observed", "user": {"login": source.split(":")[1].split("@")[0]}}
+    ])
 
     # Session A: Scout runs sync
     scout = ScoutEngine(db_file)
@@ -121,7 +124,7 @@ def test_empty_scene_zero_writes(tmp_path):
     clerk = ClerkEngine(db_file)
     assert clerk.get_queue() == []
 
-def test_delete_scout_empties_queue(tmp_path):
+def test_delete_scout_empties_queue(tmp_path, monkeypatch):
     db_file = str(tmp_path / "onrecord_test.db")
     init_desk(db_file)
     desk = get_desk_client(db_file)
@@ -133,6 +136,9 @@ def test_delete_scout_empties_queue(tmp_path):
         "sources": [source],
         "updated": "2026-09-02T00:00:00Z"
     })
+    monkeypatch.setattr(ScoutEngine, "fetch_base_wallet_activity", lambda self, source: [
+        {"id": "delete-transfer-1", "title": "Base transfer", "body": "observed", "user": {"login": source.split(":")[1].split("@")[0]}}
+    ])
 
     scout = ScoutEngine(db_file)
     filings = scout.run_sync()
@@ -152,7 +158,7 @@ def test_delete_scout_empties_queue(tmp_path):
     assert fresh_clerk.get_queue() == []
     assert fresh_clerk.check_person(person_name)["status"] == "NOT_ON_RECORD"
 
-def test_browser_wallet_ping(tmp_path):
+def test_browser_wallet_ping(tmp_path, monkeypatch):
     db_file = str(tmp_path / "onrecord_test_wallet.db")
     init_desk(db_file)
     desk = get_desk_client(db_file)
@@ -164,6 +170,9 @@ def test_browser_wallet_ping(tmp_path):
         "sources": [source],
         "updated": "2026-09-02T00:00:00Z"
     })
+    monkeypatch.setattr(ScoutEngine, "fetch_base_wallet_activity", lambda self, source: [
+        {"id": "ping-transfer-1", "title": "Base transfer", "body": "observed", "user": {"login": source.split(":")[1].split("@")[0]}}
+    ])
 
     scout = ScoutEngine(db_file)
     filings = scout.run_sync()
@@ -179,6 +188,16 @@ def test_browser_wallet_ping(tmp_path):
 
     # 2. Browser wallet ping with broadcasted tx_hash succeeds and commits to Sibyl Memory
     mock_tx_hash = "0x" + secrets.token_hex(32)
+    monkeypatch.setattr(
+        clerk_engine_module,
+        "verify_base_transaction",
+        lambda tx_hash, to_address, task_id: {
+            "status": "success",
+            "tx_hash": tx_hash,
+            "chain_id": 8453,
+            "to": to_address,
+        },
+    )
     wallet_res = clerk.ping_task(task_id, confirm=True, tx_hash=mock_tx_hash)
     assert wallet_res["status"] == "pinged"
     assert wallet_res["tx_hash"] == mock_tx_hash
@@ -244,7 +263,7 @@ def test_bind_person_wallet(tmp_path):
     assert details_after["bound_address"] == new_addr
     assert details_after["person"]["bound"] == new_addr
 
-def test_backup_and_restore_tenant_data(tmp_path):
+def test_backup_and_restore_tenant_data(tmp_path, monkeypatch):
     db_file = str(tmp_path / "onrecord_test_restore.db")
     init_desk(db_file)
     desk = get_desk_client(db_file)
@@ -256,6 +275,9 @@ def test_backup_and_restore_tenant_data(tmp_path):
         "sources": [source],
         "updated": "2026-09-02T00:00:00Z"
     })
+    monkeypatch.setattr(ScoutEngine, "fetch_base_wallet_activity", lambda self, source: [
+        {"id": "restore-transfer-1", "title": "Base transfer", "body": "observed", "user": {"login": source.split(":")[1].split("@")[0]}}
+    ])
 
     scout = ScoutEngine(db_file)
     filings = scout.run_sync()
@@ -290,6 +312,3 @@ def test_backup_and_restore_tenant_data(tmp_path):
     assert len(queue) == 1
     assert queue[0]["task_id"] == task_id
     assert restored_clerk.check_person(person_name)["status"] == "ON_RECORD"
-
-
-

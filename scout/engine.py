@@ -3,6 +3,7 @@ import re
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 import httpx
+from web3 import Web3
 
 from shared.db import get_scout_client, get_desk_client, DEFAULT_DB_PATH
 from shared.models import (
@@ -17,6 +18,7 @@ class ScoutEngine:
         self.db_path = db_path
         self.scout_client = get_scout_client(db_path)
         self.desk_client = get_desk_client(db_path)
+        self.last_sync_errors: List[str] = []
 
     def get_active_scene(self) -> Dict[str, Any]:
         """Scene source of truth is strictly tenant_desk REFERENCE."""
@@ -86,22 +88,65 @@ class ScoutEngine:
                         data = resp.json()
                         if isinstance(data, list):
                             items.extend(data)
-                    elif resp.status_code == 404 and "sibyl" in repo.lower():
-                        # Graceful fallback to verified public Sibyl repository
-                        fb_url = "https://api.github.com/repos/cea-sec/Sibyl/issues?state=open&per_page=10"
-                        fb_resp = client.get(fb_url)
-                        if fb_resp.status_code == 200 and isinstance(fb_resp.json(), list):
-                            items.extend(fb_resp.json())
+                    elif resp.status_code >= 400:
+                        self.last_sync_errors.append(
+                            f"GitHub source {source} returned HTTP {resp.status_code}."
+                        )
         except Exception:
-            pass
+            self.last_sync_errors.append(f"GitHub source {source} could not be reached.")
 
         return items
+
+    def fetch_base_wallet_activity(self, source: str) -> List[Dict[str, Any]]:
+        """Read recent ERC-20 Transfer logs involving a Base wallet via JSON-RPC."""
+        match = re.match(r"^wallet:(0x[a-fA-F0-9]{40})(?:@([0-9]+))?$", source)
+        if not match:
+            return []
+        address, chain = match.groups()
+        if chain and int(chain) != 8453:
+            self.last_sync_errors.append(f"Wallet source {source} is not on Base Mainnet (8453).")
+            return []
+
+        rpc_url = os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
+        try:
+            with httpx.Client(timeout=15.0) as client:
+                chain_id = client.post(rpc_url, json={"jsonrpc": "2.0", "id": 1, "method": "eth_chainId", "params": []}).json().get("result")
+                if chain_id != "0x2105":
+                    self.last_sync_errors.append(f"Base RPC reported chain {chain_id!r}; expected 0x2105.")
+                    return []
+                latest = int(client.post(rpc_url, json={"jsonrpc": "2.0", "id": 2, "method": "eth_blockNumber", "params": []}).json()["result"], 16)
+                window = max(1, min(int(os.getenv("BASE_SCAN_BLOCKS", "2000")), 10000))
+                padded = "0x" + address[2:].lower().zfill(64)
+                transfer_topic = Web3.keccak(text="Transfer(address,address,uint256)").hex()
+                params = {
+                    "fromBlock": hex(max(0, latest - window)),
+                    "toBlock": hex(latest),
+                    "topics": [transfer_topic, None, padded],
+                }
+                response = client.post(rpc_url, json={"jsonrpc": "2.0", "id": 3, "method": "eth_getLogs", "params": [params]})
+                payload = response.json()
+                if response.status_code >= 400 or payload.get("error"):
+                    self.last_sync_errors.append(f"Base wallet source {source} returned an RPC error.")
+                    return []
+                return [
+                    {
+                        "id": f"{log.get('transactionHash')}:{int(log.get('logIndex', '0x0'), 16)}",
+                        "title": "Base ERC-20 transfer",
+                        "body": f"Observed ERC-20 Transfer in block {int(log.get('blockNumber', '0x0'), 16)}.",
+                        "user": {"login": address},
+                    }
+                    for log in payload.get("result", [])
+                ]
+        except Exception as exc:
+            self.last_sync_errors.append(f"Base wallet source {source} could not be reached: {exc}")
+            return []
 
     def run_sync(self) -> List[Dict[str, Any]]:
         """
         Executes Scout filing cycle.
         If Scene sources is empty, exits cleanly with empty filings.
         """
+        self.last_sync_errors = []
         scene = self.get_active_scene()
         sources = scene.get("sources", [])
         if not sources:
@@ -117,115 +162,38 @@ class ScoutEngine:
 
             if src.startswith("repo:"):
                 gh_items = self.fetch_github_source(src)
-                for item in gh_items:
-                    item_id = str(item.get("id", item.get("number", "1")))
-                    user = item.get("user") or {}
-                    raw_login = user.get("login", "contributor")
-                    person_name = sanitize_identifier(raw_login)
-                    handle = raw_login
-                    title = item.get("title", "Issue / Ask")
-                    body_text = item.get("body") or ""
-                    ask_text = f"{title}: {body_text[:200]}" if body_text else title
-                    
-                    seed = f"{src}_{item_id}"
-                    ask_id = make_id("ask", seed)
-                    task_id = make_id("task", seed)
-
-                    if ask_id in filed_keys:
-                        continue
-
-                    # Repo-only source -> bound is strictly ""
-                    person_body = {
-                        "name": person_name,
-                        "handle": handle,
-                        "bound": "",
-                        "last_ask": ask_id
-                    }
-                    ask_body = {
-                        "id": ask_id,
-                        "from": person_name,
-                        "title": title,
-                        "text": ask_text,
-                        "source": src,
-                        "filed_at": utc_now_iso()
-                    }
-
-                    # Step 1: set_entity person
-                    self.scout_client.set_entity("person", person_name, person_body)
-                    # Step 2: set_entity ask
-                    self.scout_client.set_entity("ask", ask_id, ask_body)
-                    # Step 3: write_event filed
-                    self.scout_client.write_event(
-                        acted=[f"filed {ask_id} person={person_name} -> {task_id}"],
-                        extra={
-                            "ask_id": ask_id,
-                            "person": person_name,
-                            "task_id": task_id,
-                            "source": src,
-                            "title": title
-                        }
-                    )
-                    filed_keys.add(ask_id)
-                    new_filings.append({
-                        "task_id": task_id,
-                        "ask_id": ask_id,
-                        "person": person_name,
-                        "source": src
-                    })
-
-            elif src.startswith("wallet:") or src.startswith("dune:address:"):
-                # Extract address
-                addr_match = re.search(r"0x[a-fA-F0-9]{40}", src)
-                if not addr_match:
-                    continue
-                address = addr_match.group(0)
-                prefix = "wallet" if src.startswith("wallet:") else "dune"
-                person_name = sanitize_identifier(f"{prefix}_{address[-8:]}")
-                handle = address
-                bound = address
-
-                seed = f"{src}_{address}"
-                ask_id = make_id("ask", seed)
-                task_id = make_id("task", seed)
-
-                if ask_id in filed_keys:
-                    continue
-
-                text = f"Inbound activity on watched Base address {address}" if prefix == "wallet" else f"Address {address} indexed from Dune watch query"
-                person_body = {
-                    "name": person_name,
-                    "handle": handle,
-                    "bound": bound,
-                    "last_ask": ask_id
-                }
-                ask_body = {
-                    "id": ask_id,
-                    "from": person_name,
-                    "text": text,
-                    "source": src,
-                    "filed_at": utc_now_iso()
-                }
-
-                # Step 1: set_entity person
-                self.scout_client.set_entity("person", person_name, person_body)
-                # Step 2: set_entity ask
-                self.scout_client.set_entity("ask", ask_id, ask_body)
-                # Step 3: write_event filed
-                self.scout_client.write_event(
-                    acted=[f"filed {ask_id} person={person_name} -> {task_id}"],
-                    extra={
-                        "ask_id": ask_id,
-                        "person": person_name,
-                        "task_id": task_id,
-                        "source": src
-                    }
-                )
-                filed_keys.add(ask_id)
-                new_filings.append({
-                    "task_id": task_id,
-                    "ask_id": ask_id,
-                    "person": person_name,
-                    "source": src
-                })
-
+                self._file_items(src, gh_items, filed_keys, new_filings)
+            elif src.startswith("wallet:"):
+                self._file_items(src, self.fetch_base_wallet_activity(src), filed_keys, new_filings, bound_from_source=True)
         return new_filings
+
+    def _file_items(self, src: str, items: List[Dict[str, Any]], filed_keys: set,
+                    new_filings: List[Dict[str, Any]], bound_from_source: bool = False) -> None:
+        """Persist only evidence returned by a source adapter."""
+        addr_match = re.search(r"0x[a-fA-F0-9]{40}", src)
+        bound = addr_match.group(0) if bound_from_source and addr_match else ""
+        for item in items:
+            item_id = str(item.get("id", item.get("number", ""))).strip()
+            if not item_id:
+                continue
+            user = item.get("user") or {}
+            raw_login = user.get("login", "contributor")
+            person_name = sanitize_identifier(raw_login)
+            title = item.get("title", "Issue / Ask")
+            body_text = item.get("body") or ""
+            ask_text = f"{title}: {body_text[:200]}" if body_text else title
+            seed = f"{src}_{item_id}"
+            ask_id = make_id("ask", seed)
+            task_id = make_id("task", seed)
+            if ask_id in filed_keys:
+                continue
+            person_body = {"name": person_name, "handle": raw_login, "bound": bound, "last_ask": ask_id}
+            ask_body = {"id": ask_id, "from": person_name, "title": title, "text": ask_text, "source": src, "filed_at": utc_now_iso()}
+            self.scout_client.set_entity("person", person_name, person_body)
+            self.scout_client.set_entity("ask", ask_id, ask_body)
+            self.scout_client.write_event(
+                acted=[f"filed {ask_id} person={person_name} -> {task_id}"],
+                extra={"ask_id": ask_id, "person": person_name, "task_id": task_id, "source": src, "title": title}
+            )
+            filed_keys.add(ask_id)
+            new_filings.append({"task_id": task_id, "ask_id": ask_id, "person": person_name, "source": src})

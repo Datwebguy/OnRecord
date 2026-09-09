@@ -11,7 +11,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "pattern": "^(repo:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(#[0-9]+)?|wallet:0x[a-fA-F0-9]{40}(@[0-9]+)?|dune:address:0x[a-fA-F0-9]{40})$"
+        "pattern": "^(repo:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(#[0-9]+)?|wallet:0x[a-fA-F0-9]{40}(@[0-9]+)?)$"
       }
     },
     "updated": {

@@ -22,6 +22,7 @@ COPY scout/ ./scout/
 COPY shared/ ./shared/
 COPY static/ ./static/
 COPY tests/ ./tests/
+ENV ONRECORD_ADMIN_TOKEN=""
 
 # Ensure data directory exists
 RUN mkdir -p /app/data

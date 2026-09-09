@@ -9,7 +9,7 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 SOURCE_REGEX = re.compile(
-    r"^(repo:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(#[0-9]+)?|wallet:0x[a-fA-F0-9]{40}(@[0-9]+)?|dune:address:0x[a-fA-F0-9]{40})$"
+    r"^(repo:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(#[0-9]+)?|wallet:0x[a-fA-F0-9]{40}(@[0-9]+)?)$"
 )
 
 def validate_source_string(source: str) -> bool:

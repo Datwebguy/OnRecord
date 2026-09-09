@@ -1,4 +1,9 @@
 data/
+*.db-shm
+*.db-wal
+*.sqlite
+.venv/
+venv/
 scene.json
 .env
 .env.local

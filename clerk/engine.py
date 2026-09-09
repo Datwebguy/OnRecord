@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Optional, Set
 from sibyl_memory_client.exceptions import NotFoundError
 from shared.db import get_scout_client, get_clerk_client, DEFAULT_DB_PATH
 from shared.models import TaskModel, sanitize_identifier
-from shared.base_client import execute_base_ping
+from shared.base_client import execute_base_ping, verify_base_transaction
 
 def extract_issue_title(body_dict: Any) -> str:
     if not isinstance(body_dict, dict):
@@ -381,15 +381,23 @@ class ClerkEngine:
             )
             return {"status": "blocked", "task_id": task_id, "reason": reason}
 
-        # Browser wallet broadcast pathway (MetaMask / Coinbase Wallet)
-        if tx_hash and isinstance(tx_hash, str) and tx_hash.startswith("0x"):
+        # Browser wallet pathway: only record a hash after Base verifies it.
+        if tx_hash:
+            verification = verify_base_transaction(tx_hash, bound, task_id)
+            if verification.get("status") != "success":
+                reason = verification.get("reason", "Browser wallet transaction could not be verified.")
+                self.clerk_client.write_event(
+                    acted=[f"blocked {task_id} reason={reason}"],
+                    extra={"task_id": task_id, "error": reason, "tx_hash": tx_hash}
+                )
+                return {"status": "blocked", "task_id": task_id, "reason": reason}
             self.clerk_client.write_event(
                 acted=[f"pinged {task_id} tx={tx_hash}"],
                 extra={
                     "task_id": task_id,
                     "tx_hash": tx_hash,
                     "to": bound,
-                    "chain_id": 8453,
+                    "chain_id": verification["chain_id"],
                     "signer": "browser_wallet"
                 }
             )
