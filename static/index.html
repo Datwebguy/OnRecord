@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
   
-  <link rel="stylesheet" href="/static/style.css?v=5.5">
+  <link rel="stylesheet" href="/static/style.css?v=6.0">
 </head>
 <body>
 
@@ -23,7 +23,7 @@
     <div class="nav-row">
       <div class="brand-block">
         <a href="/" class="brand-link" title="OnRecord Home">
-          <img src="/static/brand/onrecord_logo_dark.png" alt="OnRecord" class="desk-brand-logo" />
+          <img src="/static/brand/onrecord_logo_light.png" data-theme-logo data-light-logo="/static/brand/onrecord_logo_light.png" data-dark-logo="/static/brand/onrecord_logo_dark.png" alt="OnRecord" class="desk-brand-logo" />
         </a>
       </div>
       
@@ -33,6 +33,7 @@
       </div>
 
       <div class="nav-right">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme"></button>
         <a href="/" class="nav-home-btn">← Home</a>
       </div>
     </div>
@@ -107,6 +108,7 @@
 
   <div id="desk-toast" class="desk-toast"></div>
 
-  <script src="/static/app.js?v=5.5"></script>
+  <script src="/static/app.js?v=6.0"></script>
+  <script src="/static/theme.js"></script>
 </body>
 </html>

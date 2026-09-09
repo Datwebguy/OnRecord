@@ -46,7 +46,17 @@ function initHeroCanvas() {
   let stampTimer = 0;
 
   function render() {
-    ctx.fillStyle = "#141210";
+    const isDark = document.documentElement.dataset.theme === "dark";
+    const canvasBg = isDark ? "#141210" : "#efe6d6";
+    const grid = isDark ? "rgba(36, 32, 28, 0.8)" : "rgba(214, 201, 178, 0.75)";
+    const scoutRail = isDark ? "rgba(92, 18, 18, 0.4)" : "rgba(156, 90, 60, 0.28)";
+    const clerkRail = isDark ? "rgba(196, 163, 90, 0.3)" : "rgba(51, 80, 122, 0.3)";
+    const ink = isDark ? "rgba(232, 224, 212, 0.5)" : "rgba(106, 96, 85, 0.6)";
+    const dust = isDark ? "rgba(232, 224, 212, 0.3)" : "rgba(106, 96, 85, 0.25)";
+    const stamp = isDark ? "rgba(200, 30, 30, " : "rgba(156, 90, 60, ";
+    const stampAccent = isDark ? "rgba(196, 163, 90, " : "rgba(51, 80, 122, ";
+
+    ctx.fillStyle = canvasBg;
     ctx.fillRect(0, 0, width, height);
 
     // 1. Draw Grid / Two Rails
@@ -54,7 +64,7 @@ function initHeroCanvas() {
 
     // Rail 1: Scout (Left Lane)
     const rail1X = width * 0.32;
-    ctx.strokeStyle = "rgba(92, 18, 18, 0.4)";
+    ctx.strokeStyle = scoutRail;
     ctx.beginPath();
     ctx.moveTo(rail1X, 0);
     ctx.lineTo(rail1X, height);
@@ -62,7 +72,7 @@ function initHeroCanvas() {
 
     // Rail 2: Clerk (Right Lane)
     const rail2X = width * 0.68;
-    ctx.strokeStyle = "rgba(196, 163, 90, 0.3)";
+    ctx.strokeStyle = clerkRail;
     ctx.beginPath();
     ctx.moveTo(rail2X, 0);
     ctx.lineTo(rail2X, height);
@@ -74,7 +84,7 @@ function initHeroCanvas() {
       clerkRailOffset = (clerkRailOffset + 0.25) % 40;
     }
 
-    ctx.strokeStyle = "rgba(36, 32, 28, 0.8)";
+    ctx.strokeStyle = grid;
     for (let y = scoutRailOffset; y < height; y += 40) {
       ctx.beginPath();
       ctx.moveTo(rail1X - 30, y);
@@ -82,7 +92,7 @@ function initHeroCanvas() {
       ctx.stroke();
     }
 
-    ctx.strokeStyle = "rgba(45, 38, 30, 0.6)";
+    ctx.strokeStyle = grid;
     for (let y = clerkRailOffset; y < height; y += 40) {
       ctx.beginPath();
       ctx.moveTo(rail2X - 30, y);
@@ -92,12 +102,12 @@ function initHeroCanvas() {
 
     // Rail Labels
     ctx.font = "10px 'JetBrains Mono', monospace";
-    ctx.fillStyle = "rgba(158, 148, 134, 0.5)";
+    ctx.fillStyle = ink;
     ctx.fillText("TENANT_SCOUT [WRITE]", rail1X - 60, 30);
     ctx.fillText("TENANT_CLERK [READ]", rail2X - 60, 30);
 
     // 2. Paper dust particles
-    ctx.fillStyle = "rgba(232, 224, 212, 0.3)";
+    ctx.fillStyle = dust;
     for (let p of particles) {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -151,19 +161,19 @@ function initHeroCanvas() {
     ctx.rotate(-0.06); // slight mechanical stamp tilt
 
     // Stamp box
-    ctx.strokeStyle = `rgba(200, 30, 30, ${stampOpacity * 0.9})`;
+    ctx.strokeStyle = `${stamp}${stampOpacity * 0.9})`;
     ctx.lineWidth = 3;
     ctx.strokeRect(-90, -32, 180, 64);
 
     // Stamp text
     ctx.font = "700 18px 'JetBrains Mono', monospace";
-    ctx.fillStyle = `rgba(200, 30, 30, ${stampOpacity})`;
+    ctx.fillStyle = `${stamp}${stampOpacity})`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("ON RECORD", 0, -4);
 
     ctx.font = "500 9px 'JetBrains Mono', monospace";
-    ctx.fillStyle = `rgba(196, 163, 90, ${stampOpacity * 0.8})`;
+    ctx.fillStyle = `${stampAccent}${stampOpacity * 0.8})`;
     ctx.fillText("COLD HANDOFF VERIFIED", 0, 16);
 
     ctx.restore();
