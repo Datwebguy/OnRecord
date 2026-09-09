@@ -210,6 +210,18 @@ python -m pip_audit -r requirements.txt --progress-spinner off
 ```
 This check needs access to the Python vulnerability service. A network timeout is an environment failure, not a clean audit result.
 
+## GitHub Actions Deployment
+
+The repository includes a manual deployment workflow at [`.github/workflows/deploy-fly.yml`](.github/workflows/deploy-fly.yml). It builds one image on a GitHub-hosted runner, pushes it to Fly Registry, and deploys that exact image to both the private operator app and the isolated public judge app.
+
+To enable it, create a Fly deploy token locally and add it to the GitHub repository as an Actions secret named `FLY_API_TOKEN`:
+
+```powershell
+fly tokens create deploy -a onrecord-desk
+```
+
+Copy the token directly into GitHub **Settings → Secrets and variables → Actions → New repository secret**. Never commit the token or paste it into an issue, README, or chat. Then run **Actions → Deploy OnRecord to Fly → Run workflow**.
+
 ---
 
 ## Contributor
